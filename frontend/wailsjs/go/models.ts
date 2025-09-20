@@ -1,7 +1,7 @@
 export namespace main {
 	
 	export class ProxyImageResponse {
-	    data: number[];
+	    data: string;
 	    contentType: string;
 	
 	    static createFrom(source: any = {}) {
