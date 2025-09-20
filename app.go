@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -85,4 +87,54 @@ func (a *App) shutdown(ctx context.Context) {
 	if a.db != nil {
 		a.db.Close()
 	}
+}
+
+// ProxyImageResponse represents the response from ProxyImage
+type ProxyImageResponse struct {
+	Data        []byte `json:"data"`
+	ContentType string `json:"contentType"`
+}
+
+// ProxyImage fetches an image from a URL and returns the image data with content type
+func (a *App) ProxyImage(imageURL string) (*ProxyImageResponse, error) {
+	log.Printf("ProxyImage called with URL: %s", imageURL)
+
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", imageURL, nil)
+	if err != nil {
+		log.Printf("Failed to create request: %v", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set User-Agent to mimic a browser
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+	req.Header.Set("Referer", "https://www.douban.com/")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Failed to fetch image: %v", err)
+		return nil, fmt.Errorf("failed to fetch image: %w", err)
+	}
+	defer resp.Body.Close()
+
+	log.Printf("Response status: %d", resp.StatusCode)
+	contentType := resp.Header.Get("Content-Type")
+	log.Printf("Content-Type: %s", contentType)
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Bad status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("failed to fetch image: status %d", resp.StatusCode)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Failed to read image data: %v", err)
+		return nil, fmt.Errorf("failed to read image data: %w", err)
+	}
+
+	log.Printf("Successfully fetched image data: %d bytes", len(data))
+	return &ProxyImageResponse{
+		Data:        data,
+		ContentType: contentType,
+	}, nil
 }
