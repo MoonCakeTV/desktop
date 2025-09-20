@@ -2,15 +2,10 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"log"
-	"net/http"
-	"os"
-	"path/filepath"
-	"runtime"
 
 	"mooncaketv/services"
+	"mooncaketv/utils"
 )
 
 // App struct
@@ -19,45 +14,6 @@ type App struct {
 	db  *services.DatabaseService
 }
 
-// getAppDataPath returns the appropriate directory for storing app data based on the OS
-func getAppDataPath(filename string) (string, error) {
-	var appDataDir string
-	
-	switch runtime.GOOS {
-	case "windows":
-		appDataDir = os.Getenv("APPDATA")
-		if appDataDir == "" {
-			return "", fmt.Errorf("APPDATA environment variable not set")
-		}
-		appDataDir = filepath.Join(appDataDir, "MooncakeTV")
-	case "darwin": // macOS
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("failed to get user home directory: %w", err)
-		}
-		appDataDir = filepath.Join(homeDir, "Library", "Application Support", "MooncakeTV")
-	case "linux":
-		// Use XDG Base Directory specification
-		xdgDataHome := os.Getenv("XDG_DATA_HOME")
-		if xdgDataHome == "" {
-			homeDir, err := os.UserHomeDir()
-			if err != nil {
-				return "", fmt.Errorf("failed to get user home directory: %w", err)
-			}
-			xdgDataHome = filepath.Join(homeDir, ".local", "share")
-		}
-		appDataDir = filepath.Join(xdgDataHome, "mooncaketv")
-	default:
-		return "", fmt.Errorf("unsupported operating system: %s", runtime.GOOS)
-	}
-	
-	// Create the directory if it doesn't exist
-	if err := os.MkdirAll(appDataDir, 0755); err != nil {
-		return "", fmt.Errorf("failed to create app data directory: %w", err)
-	}
-	
-	return filepath.Join(appDataDir, filename), nil
-}
 
 // NewApp creates a new App application struct
 func NewApp() *App {
@@ -70,7 +26,7 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	
 	// Initialize database
-	dbPath, err := getAppDataPath("mooncaketv.db")
+	dbPath, err := utils.GetAppDataPath("mooncaketv.db")
 	if err != nil {
 		log.Fatalf("Failed to get app data path: %v", err)
 	}
@@ -89,43 +45,3 @@ func (a *App) shutdown(ctx context.Context) {
 	}
 }
 
-// ProxyImageResponse represents the response from ProxyImage
-type ProxyImageResponse struct {
-	Data        []byte `json:"data"`
-	ContentType string `json:"contentType"`
-}
-
-// ProxyImage fetches an image from a URL and returns the image data with content type
-func (a *App) ProxyImage(imageURL string) (*ProxyImageResponse, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", imageURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Set User-Agent to mimic a browser
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-	req.Header.Set("Referer", "https://www.douban.com/")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch image: %w", err)
-	}
-	defer resp.Body.Close()
-
-	contentType := resp.Header.Get("Content-Type")
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch image: status %d", resp.StatusCode)
-	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read image data: %w", err)
-	}
-
-	return &ProxyImageResponse{
-		Data:        data,
-		ContentType: contentType,
-	}, nil
-}

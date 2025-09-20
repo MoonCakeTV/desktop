@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { DoubanMovieItem, DoubanTVItem } from "./types";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { ProxyImage } from "../../../wailsjs/go/main/App";
+import { ProxyImage } from "../../../wailsjs/go/services/ProxyService";
 
 // Global store for preloaded images
 const preloadedImages = new Map<string, string>();
