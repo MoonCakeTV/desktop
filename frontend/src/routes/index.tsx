@@ -1,6 +1,6 @@
-import App from "../App";
 import { createFileRoute } from "@tanstack/react-router";
+import { Home } from "../screens/home";
 
 export const Route = createFileRoute("/")({
-  component: App,
+  component: () => <Home />,
 });
