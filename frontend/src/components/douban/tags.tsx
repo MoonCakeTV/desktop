@@ -5,13 +5,23 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { ProxyImage } from "../../../wailsjs/go/main/App";
 
+// Global cache for images
+const imageCache = new Map<string, string>();
+
 const ImageTooltip = ({ imageUrl, alt }: { imageUrl: string; alt: string }) => {
-  const [imageSrc, setImageSrc] = useState<string>("");
+  const [imageSrc, setImageSrc] = useState<string>(() => imageCache.get(imageUrl) || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
   const loadImage = async () => {
-    if (imageSrc || loading || error) return;
+    // Check cache first - before any state checks
+    const cachedUrl = imageCache.get(imageUrl);
+    if (cachedUrl) {
+      setImageSrc(cachedUrl);
+      return;
+    }
+
+    if (loading || error) return;
 
     setLoading(true);
     setError(false);
@@ -23,7 +33,8 @@ const ImageTooltip = ({ imageUrl, alt }: { imageUrl: string; alt: string }) => {
       }
 
       // Decode base64 string to binary data
-      const binaryString = atob(response.data);
+      // Note: Wails incorrectly types this as number[] but it's actually a base64 string
+      const binaryString = atob(response.data as unknown as string);
       const uint8Array = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         uint8Array[i] = binaryString.charCodeAt(i);
@@ -36,6 +47,8 @@ const ImageTooltip = ({ imageUrl, alt }: { imageUrl: string; alt: string }) => {
       // Test if the blob is valid by trying to create an Image object
       const testImg = new Image();
       testImg.onload = () => {
+        // Cache the blob URL
+        imageCache.set(imageUrl, url);
         setImageSrc(url);
       };
       testImg.onerror = () => {
@@ -54,22 +67,16 @@ const ImageTooltip = ({ imageUrl, alt }: { imageUrl: string; alt: string }) => {
   useEffect(() => {
     loadImage();
 
-    // Cleanup blob URL when component unmounts
+    // Don't cleanup cached URLs - they might be used by other components
     return () => {
-      if (imageSrc) {
+      // Only cleanup if it's not in cache (temporary URLs)
+      if (imageSrc && !imageCache.has(imageUrl)) {
         URL.revokeObjectURL(imageSrc);
       }
     };
   }, []);
 
-  // Cleanup blob URL when imageSrc changes
-  useEffect(() => {
-    return () => {
-      if (imageSrc) {
-        URL.revokeObjectURL(imageSrc);
-      }
-    };
-  }, [imageSrc]);
+  // No cleanup on imageSrc changes since we're using cache
 
   return (
     <div className="w-64 h-96">
