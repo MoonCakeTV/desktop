@@ -5,78 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { ProxyImage } from "../../../wailsjs/go/main/App";
 
-// Global cache for images
-const imageCache = new Map<string, string>();
+// Global store for preloaded images
+const preloadedImages = new Map<string, string>();
 
-const ImageTooltip = ({ imageUrl, alt }: { imageUrl: string; alt: string }) => {
-  const [imageSrc, setImageSrc] = useState<string>(() => imageCache.get(imageUrl) || "");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
-
-  const loadImage = async () => {
-    // Check cache first - before any state checks
-    const cachedUrl = imageCache.get(imageUrl);
-    if (cachedUrl) {
-      setImageSrc(cachedUrl);
-      return;
-    }
-
-    if (loading || error) return;
-
-    setLoading(true);
-    setError(false);
-    try {
-      const response = await ProxyImage(imageUrl);
-
-      if (!response || !response.data || response.data.length === 0) {
-        throw new Error('No image data received');
-      }
-
-      // Decode base64 string to binary data
-      // Note: Wails incorrectly types this as number[] but it's actually a base64 string
-      const binaryString = atob(response.data as unknown as string);
-      const uint8Array = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        uint8Array[i] = binaryString.charCodeAt(i);
-      }
-      const mimeType = response.contentType || 'image/jpeg';
-
-      const blob = new Blob([uint8Array], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-
-      // Test if the blob is valid by trying to create an Image object
-      const testImg = new Image();
-      testImg.onload = () => {
-        // Cache the blob URL
-        imageCache.set(imageUrl, url);
-        setImageSrc(url);
-      };
-      testImg.onerror = () => {
-        setError(true);
-        URL.revokeObjectURL(url);
-      };
-      testImg.src = url;
-    } catch (error) {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Load image when component mounts (tooltip opens)
-  useEffect(() => {
-    loadImage();
-
-    // Don't cleanup cached URLs - they might be used by other components
-    return () => {
-      // Only cleanup if it's not in cache (temporary URLs)
-      if (imageSrc && !imageCache.has(imageUrl)) {
-        URL.revokeObjectURL(imageSrc);
-      }
-    };
-  }, []);
-
-  // No cleanup on imageSrc changes since we're using cache
+const ImageTooltip = ({ imageUrl, alt, imagesLoaded }: { imageUrl: string; alt: string; imagesLoaded: boolean }) => {
+  const imageSrc = preloadedImages.get(imageUrl) || "";
 
   return (
     <div className="w-64 h-96">
@@ -85,41 +18,80 @@ const ImageTooltip = ({ imageUrl, alt }: { imageUrl: string; alt: string }) => {
           src={imageSrc}
           alt={alt}
           className="w-64 h-96 object-cover rounded"
-          onLoad={() => {}}
-          onError={() => {
-            setError(true);
-          }}
         />
-      ) : loading ? (
-        <div className="w-64 h-96 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
-          <div className="text-xs text-gray-500">Loading...</div>
-        </div>
-      ) : error ? (
-        <div className="w-64 h-96 bg-red-100 dark:bg-red-900 rounded flex items-center justify-center">
-          <div className="text-xs text-red-500">Failed</div>
-        </div>
       ) : (
-        <div className="w-64 h-96 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
-          <div className="text-xs text-gray-400">Loading...</div>
+        <div className="w-64 h-96 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
+          <div className="text-xs text-gray-500">
+            {imagesLoaded ? "Failed" : "Loading..."}
+          </div>
         </div>
       )}
     </div>
   );
 };
 
+const preloadImage = async (imageUrl: string): Promise<void> => {
+  try {
+    const response = await ProxyImage(imageUrl);
+
+    if (!response || !response.data || response.data.length === 0) {
+      return;
+    }
+
+    // Decode base64 string to binary data
+    // Note: Wails incorrectly types this as number[] but it's actually a base64 string
+    const binaryString = atob(response.data as unknown as string);
+    const uint8Array = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      uint8Array[i] = binaryString.charCodeAt(i);
+    }
+    const mimeType = response.contentType || 'image/jpeg';
+
+    const blob = new Blob([uint8Array], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+
+    // Test if the blob is valid
+    return new Promise((resolve) => {
+      const testImg = new Image();
+      testImg.onload = () => {
+        preloadedImages.set(imageUrl, url);
+        resolve();
+      };
+      testImg.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve();
+      };
+      testImg.src = url;
+    });
+  } catch (error) {
+    // Handle error silently
+  }
+};
+
 export const DoubanTags = () => {
   const [movies, setMovies] = useState<DoubanMovieItem[]>([]);
   const [tvs, setTvs] = useState<DoubanTVItem[]>([]);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
 
   useEffect(() => {
     fetch("https://s1.m3u8.io/v1/douban")
       .then((res) => res.json())
-      .then((json) => {
+      .then(async (json) => {
         const movies = json.data?.movies || [];
         const tvs = json.data?.tv || [];
 
         setMovies(movies);
         setTvs(tvs);
+
+        // Preload all images
+        const imageUrls = [
+          ...movies.map((movie: DoubanMovieItem) => movie.cover),
+          ...tvs.map((tv: DoubanTVItem) => tv.pic.normal)
+        ];
+
+        // Load images in parallel
+        await Promise.allSettled(imageUrls.map(preloadImage));
+        setImagesLoaded(true);
       })
       .catch(() => {
         // Handle error silently
@@ -150,7 +122,7 @@ export const DoubanTags = () => {
                 </Badge>
               </TooltipTrigger>
               <TooltipContent side="top" className="p-2">
-                <ImageTooltip imageUrl={movie.cover} alt={movie.title} />
+                <ImageTooltip imageUrl={movie.cover} alt={movie.title} imagesLoaded={imagesLoaded} />
               </TooltipContent>
             </Tooltip>
           ))}
@@ -178,7 +150,7 @@ export const DoubanTags = () => {
                 </Badge>
               </TooltipTrigger>
               <TooltipContent side="top" className="p-2">
-                <ImageTooltip imageUrl={tv.pic.normal} alt={tv.title} />
+                <ImageTooltip imageUrl={tv.pic.normal} alt={tv.title} imagesLoaded={imagesLoaded} />
               </TooltipContent>
             </Tooltip>
           ))}
