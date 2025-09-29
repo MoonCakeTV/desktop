@@ -22,6 +22,7 @@ func (h *AuthHandler) Login(username, password string) (*services.User, error) {
 }
 
 // Signup creates a new user account
+// First user gets "admin" role, subsequent users get "member" role
 func (h *AuthHandler) Signup(username, email, password string) (*services.User, error) {
 	req := services.SignupRequest{
 		Username: username,

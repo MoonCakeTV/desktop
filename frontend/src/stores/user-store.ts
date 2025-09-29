@@ -5,6 +5,8 @@ interface User {
   id: number;
   username: string;
   email: string;
+  user_role: string;
+  meta_data?: string | null;
   created_at: string;
   updated_at: string;
 }

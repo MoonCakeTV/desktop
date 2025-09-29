@@ -16,11 +16,13 @@ type AuthService struct {
 }
 
 type User struct {
-	ID        int       `json:"id"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        int        `json:"id"`
+	Username  string     `json:"username"`
+	Email     string     `json:"email"`
+	UserRole  string     `json:"user_role"`
+	MetaData  *string    `json:"meta_data,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
 }
 
 type LoginRequest struct {
@@ -124,11 +126,24 @@ func (as *AuthService) Signup(req SignupRequest) (*User, error) {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
+	// Check if this is the first user (for admin role assignment)
+	var userCount int
+	err = as.db.GetDB().QueryRow("SELECT COUNT(*) FROM users").Scan(&userCount)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count users: %w", err)
+	}
+
+	// Assign role based on whether this is the first user
+	userRole := "member"
+	if userCount == 0 {
+		userRole = "admin"
+	}
+
 	// Insert the new user
 	result, err := as.db.GetDB().Exec(`
-		INSERT INTO users (username, email, password_hash, created_at, updated_at)
-		VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-	`, req.Username, req.Email, hashedPassword)
+		INSERT INTO users (username, email, password_hash, user_role, created_at, updated_at)
+		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+	`, req.Username, req.Email, hashedPassword, userRole)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
@@ -143,6 +158,8 @@ func (as *AuthService) Signup(req SignupRequest) (*User, error) {
 		ID:        int(userID),
 		Username:  req.Username,
 		Email:     req.Email,
+		UserRole:  userRole,
+		MetaData:  nil,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}, nil
@@ -159,10 +176,10 @@ func (as *AuthService) Login(req LoginRequest) (*User, error) {
 	var user User
 	var passwordHash string
 	err := as.db.GetDB().QueryRow(`
-		SELECT id, username, email, password_hash, created_at, updated_at
+		SELECT id, username, email, password_hash, user_role, meta_data, created_at, updated_at
 		FROM users
 		WHERE username = ? OR email = ?
-	`, req.Username, req.Username).Scan(&user.ID, &user.Username, &user.Email, &passwordHash, &user.CreatedAt, &user.UpdatedAt)
+	`, req.Username, req.Username).Scan(&user.ID, &user.Username, &user.Email, &passwordHash, &user.UserRole, &user.MetaData, &user.CreatedAt, &user.UpdatedAt)
 
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("invalid username or password")
