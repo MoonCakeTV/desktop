@@ -17,7 +17,6 @@ export function Search() {
 
   const handleSearch = async (searchKeyword?: string) => {
     const searchTerm = searchKeyword ?? keyword;
-    console.log("searchTerm :>> ", searchTerm);
     if (!searchTerm.trim() || searchTerm.trim().length <= 1) return;
 
     setIsLoading(true);
@@ -27,15 +26,67 @@ export function Search() {
         `https://s1.m3u8.io/v1/search2?keyword=${encodeURIComponent(searchTerm)}`
       );
       const json = await res.json();
+
+      // Check if the response code is 200
+      if (json.code !== 200) {
+        toast.error(json.message || "搜索失败");
+        setResults([]);
+        return;
+      }
+
+      // {
+      //   code: 200;
+      //   message: "success";
+      //   data: {
+      //     items: [
+      //       {
+      //         mc_id: "c1XXuXFk5eIaEEB_5jYUc",
+      //         title: "初吻",
+      //         language: "其他",
+      //         year: 2012,
+      //         region: "泰国",
+      //         summary:
+      //           "25岁的莎莎（Khanungnit Jaksamitthanont饰）仍沉浸在多年前的单恋里不能自拔，感情生活一片空白。她还在痴痴地等待着男孩的回心转意。终于，上天给了她一件出乎意料的礼物。男孩回国后\n\n25岁的莎莎（Khanungnit Jaksamitthanont饰）仍沉浸在多年前的单恋里不能自拔，感情生活一片空白。她还在痴痴地等待着男孩的回心转意。终于，上天给了她一件出乎意料的礼物。男孩回国后居然对莎莎展开热烈的追求，心花怒放的莎莎以为终于守得云开见月明。然而当她正幻想着与男孩的美好生活时，高中生潘贝斯（Takrit Hemannopjit 饰）意外地闯入了的她的生活。在公交车上，莎莎跟潘贝斯意外的发生了亲吻，莎莎的初吻就这样莫名其妙的被潘贝斯夺走了。嘴角总是带着坏坏笑容的潘贝斯，一下子就爱上了莎莎，对她展开了热烈的追求。然而面对年龄、经历等方面的巨大差别，这对看上去完全不可能在一起的恋人，最终能否走在一起呢？",
+      //         casting:
+      //           "KaneungnichJaksamithanon,PichasiniTanwiboon,SongsittRungnoppakhunsri,TakritHemannopjit,TinChokamolkit",
+      //         category: "爱情",
+      //         douban_id: "",
+      //         imdb_id: "",
+      //         tmdb_id: "",
+      //         m3u8_urls:
+      //           '{"正片":"https://tyyszywvod5.com/videos/202412/30/6771e7cb8b3ec726a9fadc03/cg8bcc/index.m3u8"}',
+      //         cover_image:
+      //           "http://tyyswimg.com/upload/vod/20241230-3/4d2542fa8cc505b43f316424cdfff3fb.jpg",
+      //       },
+      //     ],
+      //     count: 100,
+      //     keyword
+      //   }
+      // }
+
       setResults(
-        (json.data?.items || []).map((item: any) => ({
-          id: item.id,
-          mc_id: item.mc_id,
-          title: item.title || item.name || "未知",
-          poster: item.poster,
-          year: item.year,
-          rating: item.rating,
-        }))
+        (json.data?.items || []).map((item: any) => {
+          // Parse m3u8_urls safely
+          let m3u8_urls = {};
+          try {
+            if (item.m3u8_urls && typeof item.m3u8_urls === 'string') {
+              m3u8_urls = JSON.parse(item.m3u8_urls);
+            }
+          } catch (e) {
+            console.warn(`Failed to parse m3u8_urls for ${item.mc_id}:`, e);
+          }
+
+          return {
+            mc_id: item.mc_id,
+            title: item.title || "未知",
+            poster: item.cover_image,  // Use cover_image as poster
+            year: item.year?.toString(),
+            rating: item.rating,
+            region: item.region,
+            category: item.category,
+            m3u8_urls,
+          };
+        })
       );
     } catch (error) {
       console.error(error);
@@ -51,15 +102,37 @@ export function Search() {
     try {
       const res = await fetch(`https://s1.m3u8.io/v1/random`);
       const json = await res.json();
+
+      // Check if the response code is 200
+      if (json.code !== 200) {
+        toast.error(json.message || "获取随机内容失败");
+        setResults([]);
+        return;
+      }
+
       setResults(
-        (json.data?.items || []).map((item: any) => ({
-          id: item.id,
-          mc_id: item.mc_id,
-          title: item.title || item.name || "未知",
-          poster: item.poster,
-          year: item.year,
-          rating: item.rating,
-        }))
+        (json.data?.items || []).map((item: any) => {
+          // Parse m3u8_urls safely
+          let m3u8_urls = {};
+          try {
+            if (item.m3u8_urls && typeof item.m3u8_urls === 'string') {
+              m3u8_urls = JSON.parse(item.m3u8_urls);
+            }
+          } catch (e) {
+            console.warn(`Failed to parse m3u8_urls for ${item.mc_id}:`, e);
+          }
+
+          return {
+            mc_id: item.mc_id,
+            title: item.title || "未知",
+            poster: item.cover_image,  // Use cover_image as poster
+            year: item.year?.toString(),
+            rating: item.rating,
+            region: item.region,
+            category: item.category,
+            m3u8_urls,
+          };
+        })
       );
     } catch (error) {
       console.error(error);
@@ -73,7 +146,6 @@ export function Search() {
   // first render only!!!
   useEffect(() => {
     const urlKeyword = (searchParams as any)?.keyword || "";
-    console.log("urlKeyword :>> ", urlKeyword);
     if (urlKeyword) {
       setKeyword(urlKeyword);
       handleSearch(urlKeyword);
@@ -145,7 +217,7 @@ export function Search() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {results.map((result) => (
             <MediaCard
-              key={result.id}
+              key={result.mc_id}
               media={result}
               onClick={() => {
                 // TODO: Navigate to play page when it's implemented

@@ -3,12 +3,14 @@ import { Card, CardContent } from "../ui/card";
 import { cn } from "@/lib/utils";
 
 export interface MediaItem {
-  id: string;
   mc_id: string;
   title: string;
   poster?: string;
   year?: string;
   rating?: number;
+  region?: string;
+  category?: string;
+  m3u8_urls?: Record<string, string>;  // Parsed m3u8 URLs, e.g., {"正片": "https://..."}
 }
 
 interface MediaCardProps {
@@ -36,28 +38,48 @@ export function MediaCard({ media, onClick, className }: MediaCardProps) {
               loading="lazy"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-400">
+            <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-50">
               <Play className="w-12 h-12" />
             </div>
           )}
           {/* Overlay gradient on hover */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+          {/* Rating badge on top right */}
+          {media.rating && (
+            <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5">
+              <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+              <span className="text-xs text-yellow-500 font-medium">
+                {media.rating.toFixed(1)}
+              </span>
+            </div>
+          )}
         </div>
-        <div className="p-3">
-          <h3 className="font-medium text-sm truncate" title={media.title}>
+        <div className="p-3 space-y-1.5">
+          <h3 className="font-medium text-sm line-clamp-2" title={media.title}>
             {media.title}
           </h3>
-          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+
+          {/* Year and Region */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {media.year && <span>{media.year}</span>}
-            {media.rating && (
-              <div className="flex items-center gap-0.5">
-                <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
-                <span className="text-yellow-600 font-medium">
-                  {media.rating.toFixed(1)}
-                </span>
-              </div>
-            )}
+            {media.year && media.region && <span>·</span>}
+            {media.region && <span>{media.region}</span>}
           </div>
+
+          {/* Category */}
+          {media.category && (
+            <div className="flex flex-wrap gap-1">
+              {media.category.split(/[,，]/).map((cat, index) => (
+                <span
+                  key={index}
+                  className="inline-block px-1.5 py-0.5 text-xs bg-slate-100 text-slate-600 rounded"
+                >
+                  {cat.trim()}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
