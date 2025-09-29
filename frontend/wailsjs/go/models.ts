@@ -63,6 +63,7 @@ export namespace services {
 	    created_at: any;
 	    // Go type: time
 	    updated_at: any;
+	    token: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new User(source);
@@ -77,6 +78,7 @@ export namespace services {
 	        this.meta_data = source["meta_data"];
 	        this.created_at = this.convertValues(source["created_at"], null);
 	        this.updated_at = this.convertValues(source["updated_at"], null);
+	        this.token = source["token"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
