@@ -144,10 +144,10 @@ func (ds *DatabaseService) GetAllUsers() ([]map[string]interface{}, error) {
 
 // GetAllSettings returns all settings records
 func (ds *DatabaseService) GetAllSettings() ([]map[string]interface{}, error) {
-	query := `SELECT s.*, u.username
+	query := `SELECT s.id, s.user_id, s.setting_key, s.setting_value, s.created_at, s.updated_at, u.username
 			  FROM settings s
 			  LEFT JOIN users u ON s.user_id = u.id
-			  ORDER BY s.user_id NULLS FIRST, s.key;`
+			  ORDER BY s.user_id NULLS FIRST, s.setting_key;`
 	rows, err := ds.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -159,10 +159,10 @@ func (ds *DatabaseService) GetAllSettings() ([]map[string]interface{}, error) {
 		setting := make(map[string]interface{})
 		var id int
 		var userID sql.NullInt64
-		var key, value string
+		var key, value, createdAt, updatedAt string
 		var username sql.NullString
 
-		if err := rows.Scan(&id, &userID, &key, &value, &username); err != nil {
+		if err := rows.Scan(&id, &userID, &key, &value, &createdAt, &updatedAt, &username); err != nil {
 			return nil, err
 		}
 
