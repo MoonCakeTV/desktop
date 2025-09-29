@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Login } from "../../../wailsjs/go/main/App";
+import { Login as LoginAPI } from "../../../wailsjs/go/main/App";
 import { useUserStore } from "../../stores/user-store";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
@@ -23,7 +23,7 @@ export function Login() {
     setLoading(true);
 
     try {
-      const response = await Login(username, password);
+      const response = await LoginAPI(username, password);
       if (response.success && response.data) {
         login(response.data);
         navigate({ to: "/" });

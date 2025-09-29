@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Signup } from "../../../wailsjs/go/main/App";
+import { Signup as SignupAPI } from "../../../wailsjs/go/main/App";
 import { useUserStore } from "../../stores/user-store";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
@@ -36,7 +36,7 @@ export function Signup() {
     setLoading(true);
 
     try {
-      const response = await Signup(username, email, password);
+      const response = await SignupAPI(username, email, password);
       if (response.success && response.data) {
         // Auto-login after successful signup
         login(response.data);
