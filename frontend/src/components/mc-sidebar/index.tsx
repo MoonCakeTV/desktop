@@ -1,5 +1,6 @@
-import { Search, Shield, Settings, User, UserPlus, Home } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Search, Shield, Settings, User, UserPlus, Home, LogOut } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useUserStore } from "../../stores/user-store";
 
 import {
   Sidebar,
@@ -14,6 +15,14 @@ import {
 } from "../ui/sidebar";
 
 export const McSidebar = () => {
+  const { isLoggedIn, user, logout } = useUserStore();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate({ to: "/" });
+  };
+
   return (
     <Sidebar collapsible="icon" className="">
       <SidebarHeader>
@@ -36,22 +45,42 @@ export const McSidebar = () => {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton tooltip="注册" asChild>
-                  <Link to="/signup">
-                    <UserPlus />
-                    <span>注册</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton tooltip="登录" asChild>
-                  <Link to="/login">
-                    <User />
-                    <span>登录</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {!isLoggedIn && (
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton tooltip="注册" asChild>
+                      <Link to="/signup">
+                        <UserPlus />
+                        <span>注册</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton tooltip="登录" asChild>
+                      <Link to="/login">
+                        <User />
+                        <span>登录</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
+              )}
+              {isLoggedIn && (
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton tooltip={user?.username} className="cursor-pointer">
+                      <User />
+                      <span>{user?.username}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton tooltip="登出" className="cursor-pointer" onClick={handleLogout}>
+                      <LogOut />
+                      <span>登出</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton tooltip="搜索" asChild>
                   <Link to="/search">
@@ -61,7 +90,11 @@ export const McSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton tooltip="18🈲" className="cursor-pointer">
+                <SidebarMenuButton
+                  tooltip={isLoggedIn ? "18🈲" : "需要登录"}
+                  className={`cursor-pointer ${!isLoggedIn ? "opacity-50 cursor-not-allowed" : ""}`}
+                  disabled={!isLoggedIn}
+                >
                   <Shield />
                   <span>18🈲</span>
                 </SidebarMenuButton>

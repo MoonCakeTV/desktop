@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Login } from "../../wailsjs/go/main/App";
+import { useUserStore } from "../stores/user-store";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
@@ -18,6 +19,7 @@ function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useUserStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,10 +28,11 @@ function LoginPage() {
 
     try {
       const response = await Login(username, password);
-      if (response.success) {
+      if (response.success && response.data) {
+        login(response.data);
         navigate({ to: "/" });
       } else {
-        setError(response.message || "登录失败");
+        setError(response.error || "登录失败");
       }
     } catch (err) {
       setError("登录时发生错误");

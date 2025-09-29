@@ -34,11 +34,6 @@ type SignupRequest struct {
 	Password string `json:"password"`
 }
 
-type AuthResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-	User    *User  `json:"user,omitempty"`
-}
 
 func NewAuthService(db *DatabaseService) *AuthService {
 	return &AuthService{db: db}
@@ -94,20 +89,14 @@ func (as *AuthService) verifyPassword(password, encodedHash string) (bool, error
 }
 
 // Signup creates a new user account
-func (as *AuthService) Signup(req SignupRequest) (*AuthResponse, error) {
+func (as *AuthService) Signup(req SignupRequest) (*User, error) {
 	// Validate input
 	if req.Username == "" || req.Email == "" || req.Password == "" {
-		return &AuthResponse{
-			Success: false,
-			Message: "Username, email and password are required",
-		}, nil
+		return nil, fmt.Errorf("username, email and password are required")
 	}
 
 	if len(req.Password) < 6 {
-		return &AuthResponse{
-			Success: false,
-			Message: "Password must be at least 6 characters long",
-		}, nil
+		return nil, fmt.Errorf("password must be at least 6 characters long")
 	}
 
 	// Check if username already exists
@@ -117,10 +106,7 @@ func (as *AuthService) Signup(req SignupRequest) (*AuthResponse, error) {
 		return nil, fmt.Errorf("failed to check username existence: %w", err)
 	}
 	if exists {
-		return &AuthResponse{
-			Success: false,
-			Message: "Username already exists",
-		}, nil
+		return nil, fmt.Errorf("username already exists")
 	}
 
 	// Check if email already exists
@@ -129,10 +115,7 @@ func (as *AuthService) Signup(req SignupRequest) (*AuthResponse, error) {
 		return nil, fmt.Errorf("failed to check email existence: %w", err)
 	}
 	if exists {
-		return &AuthResponse{
-			Success: false,
-			Message: "Email already registered",
-		}, nil
+		return nil, fmt.Errorf("email already registered")
 	}
 
 	// Hash the password
@@ -156,29 +139,20 @@ func (as *AuthService) Signup(req SignupRequest) (*AuthResponse, error) {
 	}
 
 	// Return the created user
-	user := &User{
+	return &User{
 		ID:        int(userID),
 		Username:  req.Username,
 		Email:     req.Email,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
-	}
-
-	return &AuthResponse{
-		Success: true,
-		Message: "User created successfully",
-		User:    user,
 	}, nil
 }
 
 // Login authenticates a user
-func (as *AuthService) Login(req LoginRequest) (*AuthResponse, error) {
+func (as *AuthService) Login(req LoginRequest) (*User, error) {
 	// Validate input
 	if req.Username == "" || req.Password == "" {
-		return &AuthResponse{
-			Success: false,
-			Message: "Username and password are required",
-		}, nil
+		return nil, fmt.Errorf("username and password are required")
 	}
 
 	// Get user from database (allow login with username or email)
@@ -191,10 +165,7 @@ func (as *AuthService) Login(req LoginRequest) (*AuthResponse, error) {
 	`, req.Username, req.Username).Scan(&user.ID, &user.Username, &user.Email, &passwordHash, &user.CreatedAt, &user.UpdatedAt)
 
 	if err == sql.ErrNoRows {
-		return &AuthResponse{
-			Success: false,
-			Message: "Invalid username or password",
-		}, nil
+		return nil, fmt.Errorf("invalid username or password")
 	} else if err != nil {
 		return nil, fmt.Errorf("failed to query user: %w", err)
 	}
@@ -206,15 +177,8 @@ func (as *AuthService) Login(req LoginRequest) (*AuthResponse, error) {
 	}
 
 	if !valid {
-		return &AuthResponse{
-			Success: false,
-			Message: "Invalid username or password",
-		}, nil
+		return nil, fmt.Errorf("invalid username or password")
 	}
 
-	return &AuthResponse{
-		Success: true,
-		Message: "Login successful",
-		User:    &user,
-	}, nil
+	return &user, nil
 }

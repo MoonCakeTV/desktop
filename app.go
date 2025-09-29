@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"mooncaketv/handlers"
+	"mooncaketv/models"
 	"mooncaketv/services"
 	"mooncaketv/utils"
 )
@@ -55,12 +56,20 @@ func (a *App) shutdown(ctx context.Context) {
 }
 
 // Login authenticates a user - delegates to auth handler
-func (a *App) Login(username, password string) (*services.AuthResponse, error) {
-	return a.authHandler.Login(username, password)
+func (a *App) Login(username, password string) models.APIResponse[*services.User] {
+	user, err := a.authHandler.Login(username, password)
+	if err != nil {
+		return models.NewErrorResponse[*services.User](err.Error())
+	}
+	return models.NewSuccessResponse(user)
 }
 
 // Signup creates a new user account - delegates to auth handler
-func (a *App) Signup(username, email, password string) (*services.AuthResponse, error) {
-	return a.authHandler.Signup(username, email, password)
+func (a *App) Signup(username, email, password string) models.APIResponse[*services.User] {
+	user, err := a.authHandler.Signup(username, email, password)
+	if err != nil {
+		return models.NewErrorResponse[*services.User](err.Error())
+	}
+	return models.NewSuccessResponse(user)
 }
 

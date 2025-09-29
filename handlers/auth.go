@@ -13,7 +13,7 @@ func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 }
 
 // Login authenticates a user
-func (h *AuthHandler) Login(username, password string) (*services.AuthResponse, error) {
+func (h *AuthHandler) Login(username, password string) (*services.User, error) {
 	req := services.LoginRequest{
 		Username: username,
 		Password: password,
@@ -22,7 +22,7 @@ func (h *AuthHandler) Login(username, password string) (*services.AuthResponse, 
 }
 
 // Signup creates a new user account
-func (h *AuthHandler) Signup(username, email, password string) (*services.AuthResponse, error) {
+func (h *AuthHandler) Signup(username, email, password string) (*services.User, error) {
 	req := services.SignupRequest{
 		Username: username,
 		Email:    email,

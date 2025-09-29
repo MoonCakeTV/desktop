@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Signup } from "../../wailsjs/go/main/App";
+import { useUserStore } from "../stores/user-store";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
@@ -20,6 +21,7 @@ function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useUserStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,10 +41,12 @@ function SignupPage() {
 
     try {
       const response = await Signup(username, email, password);
-      if (response.success) {
-        navigate({ to: "/login" });
+      if (response.success && response.data) {
+        // Auto-login after successful signup
+        login(response.data);
+        navigate({ to: "/" });
       } else {
-        setError(response.message || "注册失败");
+        setError(response.error || "注册失败");
       }
     } catch (err) {
       setError("注册时发生错误");
