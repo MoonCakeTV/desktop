@@ -73,39 +73,31 @@ func (ds *DatabaseService) GetAllTables() ([]string, error) {
 
 // GetMigrations returns all migration records
 func (ds *DatabaseService) GetMigrations() ([]map[string]interface{}, error) {
-	query := `SELECT * FROM migrations ORDER BY applied_at DESC;`
+	query := `SELECT id, file_name as filename, executed_at as applied_at, success
+			  FROM migrations
+			  ORDER BY executed_at DESC;`
 	rows, err := ds.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	columns, err := rows.Columns()
-	if err != nil {
-		return nil, err
-	}
-
 	var migrations []map[string]interface{}
 	for rows.Next() {
-		values := make([]interface{}, len(columns))
-		pointers := make([]interface{}, len(columns))
-		for i := range values {
-			pointers[i] = &values[i]
-		}
+		migration := make(map[string]interface{})
+		var id int
+		var fileName, executedAt string
+		var success bool
 
-		if err := rows.Scan(pointers...); err != nil {
+		if err := rows.Scan(&id, &fileName, &executedAt, &success); err != nil {
 			return nil, err
 		}
 
-		migration := make(map[string]interface{})
-		for i, col := range columns {
-			val := values[i]
-			if b, ok := val.([]byte); ok {
-				migration[col] = string(b)
-			} else {
-				migration[col] = val
-			}
-		}
+		migration["id"] = id
+		migration["filename"] = fileName
+		migration["applied_at"] = executedAt
+		migration["success"] = success
+
 		migrations = append(migrations, migration)
 	}
 	return migrations, nil

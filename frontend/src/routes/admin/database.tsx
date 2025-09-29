@@ -25,6 +25,7 @@ interface Migration {
   id: number;
   filename: string;
   applied_at: string;
+  success: boolean;
 }
 
 interface User {
@@ -182,12 +183,13 @@ function DatabaseManagement() {
                   <TableHead className="w-[80px]">ID</TableHead>
                   <TableHead>文件名</TableHead>
                   <TableHead>应用时间</TableHead>
+                  <TableHead className="w-[100px]">状态</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {migrations.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">
                       暂无迁移记录
                     </TableCell>
                   </TableRow>
@@ -198,6 +200,14 @@ function DatabaseManagement() {
                       <TableCell className="font-mono text-xs">{migration.filename}</TableCell>
                       <TableCell className="text-sm">
                         {new Date(migration.applied_at).toLocaleString('zh-CN')}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={migration.success ? 'default' : 'destructive'}
+                          className={migration.success ? 'bg-green-500' : ''}
+                        >
+                          {migration.success ? '成功' : '失败'}
+                        </Badge>
                       </TableCell>
                     </TableRow>
                   ))
