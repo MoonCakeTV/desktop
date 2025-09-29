@@ -10,7 +10,7 @@ export interface MediaItem {
   rating?: number;
   region?: string;
   category?: string;
-  m3u8_urls?: Record<string, string>;  // Parsed m3u8 URLs, e.g., {"正片": "https://..."}
+  m3u8_urls?: Record<string, string>; // Parsed m3u8 URLs, e.g., {"正片": "https://..."}
 }
 
 interface MediaCardProps {
@@ -25,7 +25,8 @@ export function MediaCard({ media, onClick, className }: MediaCardProps) {
       onClick={onClick}
       className={cn(
         "cursor-pointer group transition-all hover:scale-105 overflow-hidden",
-        className
+        className,
+        "pt-0 pb-2"
       )}
     >
       <CardContent className="p-0">
@@ -55,7 +56,7 @@ export function MediaCard({ media, onClick, className }: MediaCardProps) {
             </div>
           )}
         </div>
-        <div className="p-3 space-y-1.5">
+        <div className="p-2 space-y-1">
           <h3 className="font-medium text-sm line-clamp-2" title={media.title}>
             {media.title}
           </h3>
@@ -69,11 +70,11 @@ export function MediaCard({ media, onClick, className }: MediaCardProps) {
 
           {/* Category */}
           {media.category && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-0.5">
               {media.category.split(/[,，]/).map((cat, index) => (
                 <span
                   key={index}
-                  className="inline-block px-1.5 py-0.5 text-xs bg-slate-100 text-slate-600 rounded"
+                  className="inline-block px-1 py-0 text-xs bg-slate-100 text-slate-600 rounded"
                 >
                   {cat.trim()}
                 </span>
