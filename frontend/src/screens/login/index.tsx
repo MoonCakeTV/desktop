@@ -2,7 +2,14 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Login as LoginAPI } from "../../../wailsjs/go/main/App";
 import { useUserStore } from "../../stores/user-store";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Label } from "../../components/ui/label";
@@ -45,7 +52,7 @@ export function Login() {
           <CardTitle>登录</CardTitle>
           <CardDescription>登录到月饼TV</CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <CardContent className="space-y-4">
             {error && (
               <Alert variant="destructive">

@@ -2,7 +2,14 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Signup as SignupAPI } from "../../../wailsjs/go/main/App";
 import { useUserStore } from "../../stores/user-store";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Label } from "../../components/ui/label";
@@ -59,7 +66,7 @@ export function Signup() {
           <CardTitle>注册</CardTitle>
           <CardDescription>创建您的月饼TV账号</CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <CardContent className="space-y-4">
             {error && (
               <Alert variant="destructive">
