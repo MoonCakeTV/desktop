@@ -73,3 +73,41 @@ func (a *App) Signup(username, email, password string) models.APIResponse[*servi
 	return models.NewSuccessResponse(user)
 }
 
+// Database Management Functions
+
+// GetDatabaseTables returns a list of all tables in the database
+func (a *App) GetDatabaseTables() models.APIResponse[[]string] {
+	tables, err := a.db.GetAllTables()
+	if err != nil {
+		return models.NewErrorResponse[[]string](err.Error())
+	}
+	return models.NewSuccessResponse(tables)
+}
+
+// GetMigrations returns all migration records
+func (a *App) GetMigrations() models.APIResponse[[]map[string]interface{}] {
+	migrations, err := a.db.GetMigrations()
+	if err != nil {
+		return models.NewErrorResponse[[]map[string]interface{}](err.Error())
+	}
+	return models.NewSuccessResponse(migrations)
+}
+
+// GetAllUsers returns all users in the database
+func (a *App) GetAllUsers() models.APIResponse[[]map[string]interface{}] {
+	users, err := a.db.GetAllUsers()
+	if err != nil {
+		return models.NewErrorResponse[[]map[string]interface{}](err.Error())
+	}
+	return models.NewSuccessResponse(users)
+}
+
+// GetAllSettings returns all settings records
+func (a *App) GetAllSettings() models.APIResponse[[]map[string]interface{}] {
+	settings, err := a.db.GetAllSettings()
+	if err != nil {
+		return models.NewErrorResponse[[]map[string]interface{}](err.Error())
+	}
+	return models.NewSuccessResponse(settings)
+}
+

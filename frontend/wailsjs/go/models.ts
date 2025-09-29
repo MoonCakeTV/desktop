@@ -34,6 +34,38 @@ export namespace models {
 		    return a;
 		}
 	}
+	export class APIResponse___map_string_interface____ {
+	    success: boolean;
+	    data: any[];
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new APIResponse___map_string_interface____(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.data = source["data"];
+	        this.error = source["error"];
+	    }
+	}
+	export class APIResponse___string_ {
+	    success: boolean;
+	    data: string[];
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new APIResponse___string_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.data = source["data"];
+	        this.error = source["error"];
+	    }
+	}
 
 }
 
