@@ -37,15 +37,19 @@ export const McSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton tooltip="注册" className="cursor-pointer">
-                  <UserPlus />
-                  <span>注册</span>
+                <SidebarMenuButton tooltip="注册" asChild>
+                  <Link to="/signup">
+                    <UserPlus />
+                    <span>注册</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton tooltip="登录" className="cursor-pointer">
-                  <User />
-                  <span>登录</span>
+                <SidebarMenuButton tooltip="登录" asChild>
+                  <Link to="/login">
+                    <User />
+                    <span>登录</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>

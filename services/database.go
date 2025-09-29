@@ -12,7 +12,7 @@ type DatabaseService struct {
 	db *sql.DB
 }
 
-func NewDatabaseService(dbPath string) (*DatabaseService, error) {
+func NewDatabaseService(dbPath, migrationsPath string) (*DatabaseService, error) {
 	// Ensure the database file has .db extension
 	if filepath.Ext(dbPath) == "" {
 		dbPath += ".db"
@@ -29,35 +29,16 @@ func NewDatabaseService(dbPath string) (*DatabaseService, error) {
 	}
 
 	service := &DatabaseService{db: db}
-	
-	// Initialize tables
-	if err := service.initTables(); err != nil {
-		return nil, fmt.Errorf("failed to initialize tables: %w", err)
+
+	// Run migrations
+	migrationService := NewMigrationService(db)
+	if err := migrationService.RunMigrations(migrationsPath); err != nil {
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
 	return service, nil
 }
 
-func (ds *DatabaseService) initTables() error {
-	// Create migrations table to track database migrations
-	migrationsQuery := `
-	CREATE TABLE IF NOT EXISTS migrations (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		file_name TEXT NOT NULL UNIQUE,
-		executed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		success BOOLEAN NOT NULL DEFAULT 0
-	);
-	`
-	
-	if _, err := ds.db.Exec(migrationsQuery); err != nil {
-		return fmt.Errorf("failed to create migrations table: %w", err)
-	}
-
-
-	
-
-	return nil
-}
 
 func (ds *DatabaseService) Close() error {
 	if ds.db != nil {

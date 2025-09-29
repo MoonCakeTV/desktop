@@ -4,14 +4,16 @@ import (
 	"context"
 	"log"
 
+	"mooncaketv/handlers"
 	"mooncaketv/services"
 	"mooncaketv/utils"
 )
 
 // App struct
 type App struct {
-	ctx context.Context
-	db  *services.DatabaseService
+	ctx         context.Context
+	db          *services.DatabaseService
+	authHandler *handlers.AuthHandler
 }
 
 
@@ -30,12 +32,19 @@ func (a *App) startup(ctx context.Context) {
 	if err != nil {
 		log.Fatalf("Failed to get app data path: %v", err)
 	}
-	
-	db, err := services.NewDatabaseService(dbPath)
+
+	// Get the migrations path (relative to the executable)
+	migrationsPath := "migrations"
+
+	db, err := services.NewDatabaseService(dbPath, migrationsPath)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 	a.db = db
+
+	// Initialize auth service and handler
+	authService := services.NewAuthService(db)
+	a.authHandler = handlers.NewAuthHandler(authService)
 }
 
 // shutdown is called when the app is shutting down
@@ -43,5 +52,15 @@ func (a *App) shutdown(ctx context.Context) {
 	if a.db != nil {
 		a.db.Close()
 	}
+}
+
+// Login authenticates a user - delegates to auth handler
+func (a *App) Login(username, password string) (*services.AuthResponse, error) {
+	return a.authHandler.Login(username, password)
+}
+
+// Signup creates a new user account - delegates to auth handler
+func (a *App) Signup(username, email, password string) (*services.AuthResponse, error) {
+	return a.authHandler.Signup(username, email, password)
 }
 

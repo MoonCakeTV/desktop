@@ -28,11 +28,12 @@ CREATE INDEX IF NOT EXISTS idx_medias_genre ON medias(genre);
 CREATE INDEX IF NOT EXISTS idx_medias_year ON medias(year);
 
 
-create table if not exists bookmarks (
+CREATE TABLE IF NOT EXISTS bookmarks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     mc_id TEXT NOT NULL,
-    UNIQUE(user_id, media_id)
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, mc_id)
 );
 
 -- Create index for faster lookups
@@ -40,7 +41,7 @@ CREATE INDEX IF NOT EXISTS idx_bookmarks_user_id ON bookmarks(user_id);
 CREATE INDEX IF NOT EXISTS idx_bookmarks_mc_id ON bookmarks(mc_id);
 
 
-create table if not exists history (
+CREATE TABLE IF NOT EXISTS history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     mc_id TEXT NOT NULL,
@@ -53,7 +54,7 @@ CREATE INDEX IF NOT EXISTS idx_history_user_id ON history(user_id);
 CREATE INDEX IF NOT EXISTS idx_history_mc_id ON history(mc_id);
 
 
-create table if not exists mc_comments (
+CREATE TABLE IF NOT EXISTS mc_comments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     mc_id TEXT NOT NULL,
     user_id INTEGER NOT NULL,

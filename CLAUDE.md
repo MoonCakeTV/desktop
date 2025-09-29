@@ -79,3 +79,4 @@ The application uses SQLite with the following main tables:
 - Frontend uses file-based routing with TanStack Router
 - Embedded assets are handled via Go's embed directive
 - The application name displays as "月饼TV" (MooncakeTV in Chinese)
+- delete the temporary mookcake-test executable after it's built
