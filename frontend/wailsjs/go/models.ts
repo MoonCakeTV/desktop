@@ -57,6 +57,8 @@ export namespace services {
 	    id: number;
 	    username: string;
 	    email: string;
+	    user_role: string;
+	    meta_data?: string;
 	    // Go type: time
 	    created_at: any;
 	    // Go type: time
@@ -71,6 +73,8 @@ export namespace services {
 	        this.id = source["id"];
 	        this.username = source["username"];
 	        this.email = source["email"];
+	        this.user_role = source["user_role"];
+	        this.meta_data = source["meta_data"];
 	        this.created_at = this.convertValues(source["created_at"], null);
 	        this.updated_at = this.convertValues(source["updated_at"], null);
 	    }
