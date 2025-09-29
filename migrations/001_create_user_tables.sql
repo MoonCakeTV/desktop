@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
+    user_id INTEGER,
     setting_key TEXT NOT NULL,
     setting_value TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -23,6 +24,7 @@ type User struct {
 	MetaData  *string    `json:"meta_data,omitempty"`
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
+	Token     string     `json:"token"` // JWT token for authenticated sessions
 }
 
 type LoginRequest struct {
@@ -90,6 +92,48 @@ func (as *AuthService) verifyPassword(password, encodedHash string) (bool, error
 	return subtle.ConstantTimeCompare(actualHash, expectedHash) == 1, nil
 }
 
+// generateJWTSecret generates a cryptographically secure random JWT secret
+func (as *AuthService) generateJWTSecret() (string, error) {
+	// Generate 32 random bytes for the JWT secret
+	secret := make([]byte, 32)
+	if _, err := rand.Read(secret); err != nil {
+		return "", fmt.Errorf("failed to generate JWT secret: %w", err)
+	}
+
+	// Encode to base64 for storage
+	return base64.StdEncoding.EncodeToString(secret), nil
+}
+
+// ensureJWTSecret ensures that a JWT secret exists in the settings table
+func (as *AuthService) ensureJWTSecret() error {
+	// Check if jwt_secret exists and has a non-empty value
+	var secretValue sql.NullString
+	err := as.db.GetDB().QueryRow(`
+		SELECT setting_value
+		FROM settings
+		WHERE user_id IS NULL AND setting_key = 'jwt_secret'
+	`).Scan(&secretValue)
+
+	// If jwt_secret doesn't exist or is empty, generate and insert a new one
+	if err == sql.ErrNoRows || !secretValue.Valid || secretValue.String == "" {
+		jwtSecret, err := as.generateJWTSecret()
+		if err != nil {
+			return fmt.Errorf("failed to generate JWT secret: %w", err)
+		}
+
+		// Insert or update the JWT secret (NULL user_id indicates global setting)
+		_, err = as.db.GetDB().Exec(`
+			INSERT OR REPLACE INTO settings (user_id, setting_key, setting_value, created_at, updated_at)
+			VALUES (NULL, 'jwt_secret', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		`, jwtSecret)
+		if err != nil {
+			return fmt.Errorf("failed to store JWT secret: %w", err)
+		}
+	}
+
+	return nil
+}
+
 // Signup creates a new user account
 func (as *AuthService) Signup(req SignupRequest) (*User, error) {
 	// Validate input
@@ -137,6 +181,11 @@ func (as *AuthService) Signup(req SignupRequest) (*User, error) {
 	userRole := "member"
 	if userCount == 0 {
 		userRole = "admin"
+
+		// When creating the first user, ensure JWT secret exists
+		if err := as.ensureJWTSecret(); err != nil {
+			return nil, fmt.Errorf("failed to ensure JWT secret: %w", err)
+		}
 	}
 
 	// Insert the new user
@@ -153,8 +202,8 @@ func (as *AuthService) Signup(req SignupRequest) (*User, error) {
 		return nil, fmt.Errorf("failed to get user ID: %w", err)
 	}
 
-	// Return the created user
-	return &User{
+	// Create the user object
+	user := &User{
 		ID:        int(userID),
 		Username:  req.Username,
 		Email:     req.Email,
@@ -162,7 +211,85 @@ func (as *AuthService) Signup(req SignupRequest) (*User, error) {
 		MetaData:  nil,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
-	}, nil
+	}
+
+	// Generate JWT token for the newly created user
+	token, err := as.generateJWTToken(user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate JWT token: %w", err)
+	}
+
+	// Add token to the user object
+	user.Token = token
+
+	// Return the created user with token
+	return user, nil
+}
+
+// getJWTSecret retrieves the JWT secret from the settings table
+func (as *AuthService) getJWTSecret() (string, error) {
+	var secretValue string
+	err := as.db.GetDB().QueryRow(`
+		SELECT setting_value
+		FROM settings
+		WHERE user_id IS NULL AND setting_key = 'jwt_secret'
+	`).Scan(&secretValue)
+
+	if err == sql.ErrNoRows {
+		return "", fmt.Errorf("JWT secret not found")
+	} else if err != nil {
+		return "", fmt.Errorf("failed to retrieve JWT secret: %w", err)
+	}
+
+	if secretValue == "" {
+		return "", fmt.Errorf("JWT secret is empty")
+	}
+
+	return secretValue, nil
+}
+
+// generateJWTToken generates a JWT token for the authenticated user
+func (as *AuthService) generateJWTToken(user *User) (string, error) {
+	// Get the JWT secret
+	jwtSecret, err := as.getJWTSecret()
+	if err != nil {
+		// If JWT secret doesn't exist, try to ensure it exists
+		if err := as.ensureJWTSecret(); err != nil {
+			return "", fmt.Errorf("failed to ensure JWT secret: %w", err)
+		}
+		// Try to get it again
+		jwtSecret, err = as.getJWTSecret()
+		if err != nil {
+			return "", fmt.Errorf("failed to retrieve JWT secret after creation: %w", err)
+		}
+	}
+
+	// Decode the base64-encoded secret
+	secretBytes, err := base64.StdEncoding.DecodeString(jwtSecret)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode JWT secret: %w", err)
+	}
+
+	// Create JWT claims
+	claims := jwt.MapClaims{
+		"user_id":  user.ID,
+		"username": user.Username,
+		"email":    user.Email,
+		"role":     user.UserRole,
+		"exp":      time.Now().Add(24 * time.Hour).Unix(), // Token expires in 24 hours
+		"iat":      time.Now().Unix(),
+	}
+
+	// Create token with claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Sign the token with the secret
+	tokenString, err := token.SignedString(secretBytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign JWT token: %w", err)
+	}
+
+	return tokenString, nil
 }
 
 // Login authenticates a user
@@ -196,6 +323,15 @@ func (as *AuthService) Login(req LoginRequest) (*User, error) {
 	if !valid {
 		return nil, fmt.Errorf("invalid username or password")
 	}
+
+	// Generate JWT token for the authenticated user
+	token, err := as.generateJWTToken(&user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate JWT token: %w", err)
+	}
+
+	// Add token to the user object
+	user.Token = token
 
 	return &user, nil
 }

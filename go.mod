@@ -3,6 +3,7 @@ module mooncaketv
 go 1.23
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/wailsapp/wails/v2 v2.10.2
 	golang.org/x/crypto v0.33.0
