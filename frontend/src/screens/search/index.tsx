@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
+import { Route } from "../../routes/search";
 import { Loader2, Play } from "lucide-react";
 import { toast } from "sonner";
 import { McSearchBar } from "../../components/mc-search-bar";
@@ -7,14 +8,16 @@ import { MediaCard, type MediaItem } from "../../components/mc-media-card";
 
 export function Search() {
   const navigate = useNavigate();
-  const searchParams = useSearch({ from: "/search" });
+  const searchParams = Route.useSearch();
+
   const [keyword, setKeyword] = useState("");
   const [results, setResults] = useState<MediaItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
   const handleSearch = async (searchKeyword?: string) => {
-    const searchTerm = searchKeyword || keyword;
+    const searchTerm = searchKeyword ?? keyword;
+    console.log("searchTerm :>> ", searchTerm);
     if (!searchTerm.trim() || searchTerm.trim().length <= 1) return;
 
     setIsLoading(true);
@@ -66,9 +69,11 @@ export function Search() {
     }
   };
 
-  // Initialize keyword from URL params and trigger search if present
+  // Sync keyword with URL param and trigger search
+  // first render only!!!
   useEffect(() => {
     const urlKeyword = (searchParams as any)?.keyword || "";
+    console.log("urlKeyword :>> ", urlKeyword);
     if (urlKeyword) {
       setKeyword(urlKeyword);
       handleSearch(urlKeyword);

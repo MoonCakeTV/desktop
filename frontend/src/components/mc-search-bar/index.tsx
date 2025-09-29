@@ -23,20 +23,34 @@ export function McSearchBar({
           type="text"
           value={keyword}
           onChange={(e) => handleKeywordChange(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            if (e.key === "Enter") {
+              handleSearch();
+            }
+          }}
           placeholder="搜索电影、电视剧、动漫..."
-          className="pl-10 h-10"
+          className="pl-10 h-10 text-black"
         />
       </div>
       <Button
-        onClick={handleSearch}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          handleSearch();
+        }}
         disabled={!keyword.trim() || keyword.trim().length <= 1}
         className="px-8"
       >
         搜索
       </Button>
       <Button
-        onClick={handleRandom}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          handleRandom();
+        }}
         variant="secondary"
         className="px-8"
       >
