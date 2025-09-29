@@ -3,7 +3,7 @@ package services
 import (
 	"database/sql"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -58,7 +58,7 @@ func (ms *MigrationService) createMigrationsTable() error {
 }
 
 func (ms *MigrationService) readMigrationFiles(migrationsPath string) ([]Migration, error) {
-	files, err := ioutil.ReadDir(migrationsPath)
+	files, err := os.ReadDir(migrationsPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read migrations directory: %w", err)
 	}
@@ -69,7 +69,7 @@ func (ms *MigrationService) readMigrationFiles(migrationsPath string) ([]Migrati
 			continue
 		}
 
-		content, err := ioutil.ReadFile(filepath.Join(migrationsPath, file.Name()))
+		content, err := os.ReadFile(filepath.Join(migrationsPath, file.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("failed to read migration file %s: %w", file.Name(), err)
 		}
