@@ -34,7 +34,7 @@ func GetAppDataPath(filename string) (string, error) {
 			}
 			xdgDataHome = filepath.Join(homeDir, ".local", "share")
 		}
-		appDataDir = filepath.Join(xdgDataHome, "mooncaketv")
+		appDataDir = filepath.Join(xdgDataHome, "MooncakeTV")
 	default:
 		return "", fmt.Errorf("unsupported operating system: %s", runtime.GOOS)
 	}
