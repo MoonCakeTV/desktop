@@ -1,4 +1,13 @@
-import { Search, Shield, Settings, User, UserPlus, Home, LogOut } from "lucide-react";
+import {
+  Search,
+  Shield,
+  Settings,
+  User,
+  UserPlus,
+  Home,
+  LogOut,
+  Database,
+} from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useUserStore } from "../../stores/user-store";
 
@@ -78,7 +87,10 @@ export const McSidebar = () => {
               )}
               {isLoggedIn && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton tooltip={user?.username} className="cursor-pointer">
+                  <SidebarMenuButton
+                    tooltip={user?.username}
+                    className="cursor-pointer"
+                  >
                     <User />
                     <span>{user?.username}</span>
                   </SidebarMenuButton>
@@ -105,17 +117,35 @@ export const McSidebar = () => {
               <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton tooltip="设置" className="cursor-pointer">
+                    <SidebarMenuButton
+                      tooltip="设置"
+                      className="cursor-pointer"
+                    >
                       <Settings />
                       <span>设置</span>
-                      <ChevronRight className={`ml-auto h-4 w-4 transition-transform ${settingsOpen ? "rotate-90" : ""}`} />
+                      <ChevronRight
+                        className={`ml-auto h-4 w-4 transition-transform ${settingsOpen ? "rotate-90" : ""}`}
+                      />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub className="border-l-0">
+                      {isLoggedIn && user?.user_role === "admin" && (
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild>
+                            <Link to="/admin/database">
+                              <Database />
+                              <span>数据库管理</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      )}
                       {isLoggedIn && (
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton className="cursor-pointer" onClick={handleLogout}>
+                          <SidebarMenuSubButton
+                            className="cursor-pointer"
+                            onClick={handleLogout}
+                          >
                             <LogOut />
                             <span>登出</span>
                           </SidebarMenuSubButton>
