@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 
 import { DoubanMovieItem, DoubanTVItem } from "./types";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +70,7 @@ const preloadImage = async (imageUrl: string): Promise<void> => {
 };
 
 export const DoubanTags = () => {
+  const navigate = useNavigate();
   const [movies, setMovies] = useState<DoubanMovieItem[]>([]);
   const [tvs, setTvs] = useState<DoubanTVItem[]>([]);
   const [imagesLoaded, setImagesLoaded] = useState(false);
@@ -112,10 +114,10 @@ export const DoubanTags = () => {
                   variant="outline"
                   className="cursor-pointer hover:bg-purple-900 hover:text-white px-2 py-1 border-2 border-blue-300 dark:border-gray-700"
                   onClick={() => {
-                    window.open(
-                      `/search?keyword=${encodeURIComponent(movie.title)}`,
-                      "_blank"
-                    );
+                    navigate({
+                      to: "/search",
+                      search: { keyword: movie.title }
+                    });
                   }}
                 >
                   {`${movie.title} (${movie.rate})`}
@@ -140,10 +142,10 @@ export const DoubanTags = () => {
                   variant="outline"
                   className="cursor-pointer hover:bg-purple-900 hover:text-white px-2 py-1 border-2 border-blue-300 dark:border-gray-700"
                   onClick={() => {
-                    window.open(
-                      `/search?keyword=${encodeURIComponent(tv.title)}`,
-                      "_blank"
-                    );
+                    navigate({
+                      to: "/search",
+                      search: { keyword: tv.title }
+                    });
                   }}
                 >
                   {`${tv.title} (${tv.rating.value})`}
