@@ -173,3 +173,149 @@ func (ds *DatabaseService) GetAllSettings() ([]map[string]interface{}, error) {
 	}
 	return settings, nil
 }
+
+// GetUserByID returns a specific user by their ID
+func (ds *DatabaseService) GetUserByID(userID int) (map[string]interface{}, error) {
+	query := `SELECT id, username, email, user_role, meta_data, created_at, updated_at
+			  FROM users
+			  WHERE id = ?`
+
+	user := make(map[string]interface{})
+	var id int
+	var username, email, userRole, createdAt, updatedAt string
+	var metaData sql.NullString
+
+	err := ds.db.QueryRow(query, userID).Scan(&id, &username, &email, &userRole, &metaData, &createdAt, &updatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, err
+	}
+
+	user["id"] = id
+	user["username"] = username
+	user["email"] = email
+	user["user_role"] = userRole
+	if metaData.Valid {
+		user["meta_data"] = metaData.String
+	} else {
+		user["meta_data"] = nil
+	}
+	user["created_at"] = createdAt
+	user["updated_at"] = updatedAt
+
+	return user, nil
+}
+
+// GetUserSettings returns all settings for a specific user (including global settings)
+func (ds *DatabaseService) GetUserSettings(userID int) ([]map[string]interface{}, error) {
+	// Get both user-specific settings and global settings (where user_id is NULL)
+	query := `SELECT id, user_id, setting_key, setting_value, created_at, updated_at
+			  FROM settings
+			  WHERE user_id = ? OR user_id IS NULL
+			  ORDER BY user_id IS NULL DESC, setting_key`
+
+	rows, err := ds.db.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var settings []map[string]interface{}
+	for rows.Next() {
+		setting := make(map[string]interface{})
+		var id int
+		var userIDVal sql.NullInt64
+		var key, value, createdAt, updatedAt string
+
+		if err := rows.Scan(&id, &userIDVal, &key, &value, &createdAt, &updatedAt); err != nil {
+			return nil, err
+		}
+
+		setting["id"] = id
+		setting["key"] = key
+		setting["value"] = value
+		setting["created_at"] = createdAt
+		setting["updated_at"] = updatedAt
+
+		// Mark whether this is a global or personal setting
+		if userIDVal.Valid {
+			setting["type"] = "personal"
+			setting["user_id"] = userIDVal.Int64
+		} else {
+			setting["type"] = "global"
+			setting["user_id"] = nil
+		}
+
+		settings = append(settings, setting)
+	}
+
+	return settings, nil
+}
+
+// UpdateSetting updates a setting value
+func (ds *DatabaseService) UpdateSetting(settingID int, newValue string, userID int, isAdmin bool) error {
+	// First, check if the setting exists and get its owner
+	var settingUserID sql.NullInt64
+	err := ds.db.QueryRow("SELECT user_id FROM settings WHERE id = ?", settingID).Scan(&settingUserID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("setting not found")
+		}
+		return err
+	}
+
+	// Check permissions
+	if settingUserID.Valid {
+		// Personal setting - can only be edited by the owner
+		if int(settingUserID.Int64) != userID {
+			return fmt.Errorf("permission denied: cannot edit other user's settings")
+		}
+	} else {
+		// Global setting - can only be edited by admin
+		if !isAdmin {
+			return fmt.Errorf("permission denied: only admin can edit global settings")
+		}
+	}
+
+	// Update the setting
+	_, err = ds.db.Exec(`
+		UPDATE settings
+		SET setting_value = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, newValue, settingID)
+
+	return err
+}
+
+// DeleteSetting deletes a setting
+func (ds *DatabaseService) DeleteSetting(settingID int, userID int, isAdmin bool) error {
+	// First, check if the setting exists and get its owner
+	var settingUserID sql.NullInt64
+	err := ds.db.QueryRow("SELECT user_id FROM settings WHERE id = ?", settingID).Scan(&settingUserID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("setting not found")
+		}
+		return err
+	}
+
+	// Check permissions
+	if settingUserID.Valid {
+		// Personal setting - can only be deleted by the owner
+		if int(settingUserID.Int64) != userID {
+			return fmt.Errorf("permission denied: cannot delete other user's settings")
+		}
+	} else {
+		// Global setting - can only be deleted by admin
+		if !isAdmin {
+			return fmt.Errorf("permission denied: only admin can delete global settings")
+		}
+	}
+
+	// Delete the setting
+	_, err = ds.db.Exec("DELETE FROM settings WHERE id = ?", settingID)
+
+	return err
+}

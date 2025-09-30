@@ -111,3 +111,39 @@ func (a *App) GetAllSettings() models.APIResponse[[]map[string]interface{}] {
 	return models.NewSuccessResponse(settings)
 }
 
+// GetCurrentUser returns the current user's information by user ID
+func (a *App) GetCurrentUser(userID int) models.APIResponse[map[string]interface{}] {
+	user, err := a.db.GetUserByID(userID)
+	if err != nil {
+		return models.NewErrorResponse[map[string]interface{}](err.Error())
+	}
+	return models.NewSuccessResponse(user)
+}
+
+// GetUserSettings returns all settings for a specific user
+func (a *App) GetUserSettings(userID int) models.APIResponse[[]map[string]interface{}] {
+	settings, err := a.db.GetUserSettings(userID)
+	if err != nil {
+		return models.NewErrorResponse[[]map[string]interface{}](err.Error())
+	}
+	return models.NewSuccessResponse(settings)
+}
+
+// UpdateSetting updates a setting value
+func (a *App) UpdateSetting(settingID int, newValue string, userID int, isAdmin bool) models.APIResponse[bool] {
+	err := a.db.UpdateSetting(settingID, newValue, userID, isAdmin)
+	if err != nil {
+		return models.NewErrorResponse[bool](err.Error())
+	}
+	return models.NewSuccessResponse(true)
+}
+
+// DeleteSetting deletes a setting
+func (a *App) DeleteSetting(settingID int, userID int, isAdmin bool) models.APIResponse[bool] {
+	err := a.db.DeleteSetting(settingID, userID, isAdmin)
+	if err != nil {
+		return models.NewErrorResponse[bool](err.Error())
+	}
+	return models.NewSuccessResponse(true)
+}
+

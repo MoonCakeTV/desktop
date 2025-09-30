@@ -66,6 +66,38 @@ export namespace models {
 	        this.error = source["error"];
 	    }
 	}
+	export class APIResponse_bool_ {
+	    success: boolean;
+	    data: boolean;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new APIResponse_bool_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.data = source["data"];
+	        this.error = source["error"];
+	    }
+	}
+	export class APIResponse_map_string_interface____ {
+	    success: boolean;
+	    data: Record<string, any>;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new APIResponse_map_string_interface____(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.data = source["data"];
+	        this.error = source["error"];
+	    }
+	}
 
 }
 
