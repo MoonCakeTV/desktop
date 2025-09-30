@@ -18,6 +18,8 @@ export function GetUserSettings(arg1:number):Promise<models.APIResponse___map_st
 
 export function Login(arg1:string,arg2:string):Promise<models.APIResponse_mooncaketv_services_User_>;
 
+export function OpenDatabaseDirectory():Promise<models.APIResponse_string_>;
+
 export function Signup(arg1:string,arg2:string,arg3:string):Promise<models.APIResponse_mooncaketv_services_User_>;
 
 export function UpdateSetting(arg1:number,arg2:string,arg3:number,arg4:boolean):Promise<models.APIResponse_bool_>;

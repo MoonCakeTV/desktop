@@ -98,6 +98,22 @@ export namespace models {
 	        this.error = source["error"];
 	    }
 	}
+	export class APIResponse_string_ {
+	    success: boolean;
+	    data: string;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new APIResponse_string_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.data = source["data"];
+	        this.error = source["error"];
+	    }
+	}
 
 }
 

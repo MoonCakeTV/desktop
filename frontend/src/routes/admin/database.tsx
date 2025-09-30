@@ -1,9 +1,24 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { useNavigate } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
-import { useUserStore } from '../../stores/user-store';
-import { Database, AlertCircle, Table as TableIcon, Users, Settings, GitBranch, RefreshCw } from 'lucide-react';
-import { GetDatabaseTables, GetMigrations, GetAllUsers, GetAllSettings } from '../../../wailsjs/go/main/App';
+import { createFileRoute } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { useUserStore } from "../../stores/user-store";
+import {
+  Database,
+  AlertCircle,
+  Table as TableIcon,
+  Users,
+  Settings,
+  GitBranch,
+  RefreshCw,
+  FolderOpen,
+} from "lucide-react";
+import {
+  GetDatabaseTables,
+  GetMigrations,
+  GetAllUsers,
+  GetAllSettings,
+  OpenDatabaseDirectory,
+} from "../../../wailsjs/go/main/App";
 import {
   Table,
   TableBody,
@@ -11,13 +26,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../components/ui/table';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { Alert, AlertDescription } from '../../components/ui/alert';
+} from "../../components/ui/table";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Alert, AlertDescription } from "../../components/ui/alert";
 
-export const Route = createFileRoute('/admin/database')({
+export const Route = createFileRoute("/admin/database")({
   component: DatabaseManagement,
 });
 
@@ -57,8 +78,8 @@ function DatabaseManagement() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoggedIn || user?.user_role !== 'admin') {
-      navigate({ to: '/' });
+    if (!isLoggedIn || user?.user_role !== "admin") {
+      navigate({ to: "/" });
     }
   }, [isLoggedIn, user, navigate]);
 
@@ -68,50 +89,59 @@ function DatabaseManagement() {
 
     try {
       // Fetch all data in parallel
-      const [tablesRes, migrationsRes, usersRes, settingsRes] = await Promise.all([
-        GetDatabaseTables(),
-        GetMigrations(),
-        GetAllUsers(),
-        GetAllSettings()
-      ]);
+      const [tablesRes, migrationsRes, usersRes, settingsRes] =
+        await Promise.all([
+          GetDatabaseTables(),
+          GetMigrations(),
+          GetAllUsers(),
+          GetAllSettings(),
+        ]);
 
       if (tablesRes.success) {
         setTables(tablesRes.data || []);
       }
 
       if (migrationsRes.success) {
-        setMigrations(migrationsRes.data as Migration[] || []);
+        setMigrations((migrationsRes.data as Migration[]) || []);
       }
 
       if (usersRes.success) {
-        setUsers(usersRes.data as User[] || []);
+        setUsers((usersRes.data as User[]) || []);
       }
 
       if (settingsRes.success) {
-        setSettings(settingsRes.data as Setting[] || []);
+        setSettings((settingsRes.data as Setting[]) || []);
       }
-
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch data');
+      setError(err instanceof Error ? err.message : "Failed to fetch data");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleOpenDirectory = async () => {
+    try {
+      const result = await OpenDatabaseDirectory();
+      if (!result.success) {
+        setError(result.error || "Failed to open directory");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to open directory");
+    }
+  };
+
   useEffect(() => {
-    if (isLoggedIn && user?.user_role === 'admin') {
+    if (isLoggedIn && user?.user_role === "admin") {
       fetchData();
     }
   }, [isLoggedIn, user]);
 
-  if (!isLoggedIn || user?.user_role !== 'admin') {
+  if (!isLoggedIn || user?.user_role !== "admin") {
     return (
       <div className="flex items-center justify-center h-screen">
         <Alert variant="destructive" className="max-w-md">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Unauthorized Access - Admin Only
-          </AlertDescription>
+          <AlertDescription>Unauthorized Access - Admin Only</AlertDescription>
         </Alert>
       </div>
     );
@@ -121,17 +151,25 @@ function DatabaseManagement() {
     <div className="container mx-auto px-4 py-8 max-h-screen overflow-y-auto">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
-            <Database className="h-8 w-8" />
-            <h1 className="text-3xl font-bold">数据库管理</h1>
+            <Database className="h-8 w-8 text-black" />
+            <h1 className="text-3xl font-bold text-black">数据库管理</h1>
           </div>
+
           <Button
-            onClick={fetchData}
-            disabled={loading}
+            onClick={handleOpenDirectory}
             size="sm"
+            className="cursor-pointer"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <FolderOpen className="h-4 w-4 mr-2" />
+            打开数据库所在目录
+          </Button>
+
+          <Button onClick={fetchData} disabled={loading} size="sm">
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+            />
             刷新
           </Button>
         </div>
@@ -189,24 +227,33 @@ function DatabaseManagement() {
               <TableBody>
                 {migrations.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={4}
+                      className="text-center text-muted-foreground"
+                    >
                       暂无迁移记录
                     </TableCell>
                   </TableRow>
                 ) : (
                   migrations.map((migration) => (
                     <TableRow key={migration.id}>
-                      <TableCell className="font-medium">{migration.id}</TableCell>
-                      <TableCell className="font-mono text-xs">{migration.filename}</TableCell>
+                      <TableCell className="font-medium">
+                        {migration.id}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {migration.filename}
+                      </TableCell>
                       <TableCell className="text-sm">
-                        {new Date(migration.applied_at).toLocaleString('zh-CN')}
+                        {new Date(migration.applied_at).toLocaleString("zh-CN")}
                       </TableCell>
                       <TableCell>
                         <Badge
-                          variant={migration.success ? 'default' : 'destructive'}
-                          className={migration.success ? 'bg-green-500' : ''}
+                          variant={
+                            migration.success ? "default" : "destructive"
+                          }
+                          className={migration.success ? "bg-green-500" : ""}
                         >
-                          {migration.success ? '成功' : '失败'}
+                          {migration.success ? "成功" : "失败"}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -241,7 +288,10 @@ function DatabaseManagement() {
               <TableBody>
                 {users.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center text-muted-foreground"
+                    >
                       暂无用户
                     </TableCell>
                   </TableRow>
@@ -249,20 +299,26 @@ function DatabaseManagement() {
                   users.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.id}</TableCell>
-                      <TableCell className="font-medium">{user.username}</TableCell>
+                      <TableCell className="font-medium">
+                        {user.username}
+                      </TableCell>
                       <TableCell className="text-sm">{user.email}</TableCell>
                       <TableCell>
                         <Badge
-                          variant={user.user_role === 'admin' ? 'destructive' : 'default'}
+                          variant={
+                            user.user_role === "admin"
+                              ? "destructive"
+                              : "default"
+                          }
                         >
                           {user.user_role}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm">
-                        {new Date(user.created_at).toLocaleString('zh-CN')}
+                        {new Date(user.created_at).toLocaleString("zh-CN")}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {new Date(user.updated_at).toLocaleString('zh-CN')}
+                        {new Date(user.updated_at).toLocaleString("zh-CN")}
                       </TableCell>
                     </TableRow>
                   ))
@@ -294,24 +350,42 @@ function DatabaseManagement() {
               <TableBody>
                 {settings.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={4}
+                      className="text-center text-muted-foreground"
+                    >
                       暂无设置项
                     </TableCell>
                   </TableRow>
                 ) : (
                   settings.map((setting) => (
                     <TableRow key={setting.id}>
-                      <TableCell className="font-medium">{setting.id}</TableCell>
+                      <TableCell className="font-medium">
+                        {setting.id}
+                      </TableCell>
                       <TableCell>
                         <Badge
-                          variant={setting.username === '全局设置' ? 'outline' : 'secondary'}
-                          className={setting.username === '全局设置' ? 'border-green-500 text-green-700' : ''}
+                          variant={
+                            setting.username === "全局设置"
+                              ? "outline"
+                              : "secondary"
+                          }
+                          className={
+                            setting.username === "全局设置"
+                              ? "border-green-500 text-green-700"
+                              : ""
+                          }
                         >
                           {setting.username}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-sm">{setting.key}</TableCell>
-                      <TableCell className="text-sm max-w-xs truncate" title={setting.value}>
+                      <TableCell className="font-mono text-sm">
+                        {setting.key}
+                      </TableCell>
+                      <TableCell
+                        className="text-sm max-w-xs truncate"
+                        title={setting.value}
+                      >
                         {setting.value}
                       </TableCell>
                     </TableRow>

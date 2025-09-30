@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"log"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 
 	"mooncaketv/handlers"
 	"mooncaketv/models"
@@ -145,5 +148,33 @@ func (a *App) DeleteSetting(settingID int, userID int, isAdmin bool) models.APIR
 		return models.NewErrorResponse[bool](err.Error())
 	}
 	return models.NewSuccessResponse(true)
+}
+
+// OpenDatabaseDirectory opens the directory containing the SQLite database file
+func (a *App) OpenDatabaseDirectory() models.APIResponse[string] {
+	dbPath, err := utils.GetAppDataPath("mooncaketv.db")
+	if err != nil {
+		return models.NewErrorResponse[string](err.Error())
+	}
+
+	dir := filepath.Dir(dbPath)
+
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("explorer", dir)
+	case "darwin":
+		cmd = exec.Command("open", dir)
+	case "linux":
+		cmd = exec.Command("xdg-open", dir)
+	default:
+		return models.NewErrorResponse[string]("Unsupported operating system")
+	}
+
+	if err := cmd.Start(); err != nil {
+		return models.NewErrorResponse[string]("Failed to open directory: " + err.Error())
+	}
+
+	return models.NewSuccessResponse(dir)
 }
 
