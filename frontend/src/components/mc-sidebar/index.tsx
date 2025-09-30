@@ -85,17 +85,6 @@ export const McSidebar = () => {
                   </SidebarMenuItem>
                 </>
               )}
-              {isLoggedIn && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    tooltip={user?.username}
-                    className="cursor-pointer"
-                  >
-                    <User />
-                    <span>{user?.username}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
               <SidebarMenuItem>
                 <SidebarMenuButton tooltip="搜索" asChild>
                   <Link to="/search">
@@ -130,6 +119,19 @@ export const McSidebar = () => {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub className="border-l-0">
+                      {isLoggedIn && (
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild>
+                            <Link
+                              to="/admin/myprofile"
+                              className="flex items-center gap-2"
+                            >
+                              <User />
+                              <span>{user?.username} 个人设置</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      )}
                       {isLoggedIn && user?.user_role === "admin" && (
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton asChild>
