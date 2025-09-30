@@ -17,14 +17,14 @@ type AuthService struct {
 }
 
 type User struct {
-	ID        int        `json:"id"`
-	Username  string     `json:"username"`
-	Email     string     `json:"email"`
-	UserRole  string     `json:"user_role"`
-	MetaData  *string    `json:"meta_data,omitempty"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
-	Token     string     `json:"token"` // JWT token for authenticated sessions
+	ID        int     `json:"id"`
+	Username  string  `json:"username"`
+	Email     string  `json:"email"`
+	UserRole  string  `json:"user_role"`
+	MetaData  *string `json:"meta_data,omitempty"`
+	CreatedAt string  `json:"created_at"`
+	UpdatedAt string  `json:"updated_at"`
+	Token     string  `json:"token"` // JWT token for authenticated sessions
 }
 
 type LoginRequest struct {
@@ -209,8 +209,8 @@ func (as *AuthService) Signup(req SignupRequest) (*User, error) {
 		Email:     req.Email,
 		UserRole:  userRole,
 		MetaData:  nil,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		CreatedAt: time.Now().Format(time.RFC3339),
+		UpdatedAt: time.Now().Format(time.RFC3339),
 	}
 
 	// Generate JWT token for the newly created user
