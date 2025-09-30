@@ -66,17 +66,33 @@ The application uses SQLite with the following main tables:
 ├── main.go              # Wails app entry point
 ├── app.go               # Main app logic and database integration
 ├── wails.json           # Wails configuration
-├── services/            # Backend services (database, etc.)
+├── Makefile             # Development shortcuts
+├── services/            # Backend services
+│   ├── auth.go          # Authentication logic
+│   ├── database.go      # Database operations
+│   ├── migration.go     # Migration utilities
+│   └── proxy.go         # Proxy services
 ├── migrations/          # SQL migration files
-├── handlers/            # HTTP/API handlers (currently empty)
-├── models/              # Data models (currently empty)
+├── handlers/            # HTTP/API handlers
+│   └── auth.go          # Authentication handlers
+├── models/              # Data models
+│   └── response.go      # API response models
+├── utils/               # Utility functions
 ├── frontend/
 │   ├── src/
-│   │   ├── components/  # React components (ui/, douban/, sidebar/)
+│   │   ├── components/  # React components
+│   │   │   ├── ui/      # Shadcn UI components
+│   │   │   ├── douban/  # Douban integration components
+│   │   │   ├── mc-*/    # Custom MooncakeTV components
+│   │   │   └── my-profile/ # User profile components
 │   │   ├── routes/      # TanStack router routes
 │   │   ├── hooks/       # Custom React hooks
-│   │   └── lib/         # Utility libraries
-│   └── package.json     # Frontend dependencies
+│   │   ├── lib/         # Utility libraries
+│   │   ├── screens/     # Screen components
+│   │   ├── stores/      # State management stores
+│   │   └── contexts/    # React contexts
+│   ├── package.json     # Frontend dependencies
+│   └── dist/            # Built frontend assets
 └── build/               # Build assets and configuration
 ```
 
