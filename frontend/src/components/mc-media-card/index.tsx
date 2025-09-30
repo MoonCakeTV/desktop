@@ -30,7 +30,7 @@ export function MediaCard({ media, onClick, className }: MediaCardProps) {
       )}
     >
       <CardContent className="p-0">
-        <div className="relative aspect-[2/3] bg-slate-100">
+        <div className="relative aspect-[3/4] bg-slate-100">
           {media.poster ? (
             <img
               src={media.poster}
