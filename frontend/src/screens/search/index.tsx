@@ -5,15 +5,24 @@ import { Loader2, Play } from "lucide-react";
 import { toast } from "sonner";
 import { McSearchBar } from "../../components/mc-search-bar";
 import { MediaCard, type MediaItem } from "../../components/mc-media-card";
+import { useUserStore } from "../../stores/user-store";
+import {
+  AddBookmark,
+  RemoveBookmark,
+  GetUserBookmarks,
+  SaveMediaInfo,
+} from "../../../wailsjs/go/main/App";
 
 export function Search() {
   const navigate = useNavigate();
   const searchParams = Route.useSearch();
+  const { user } = useUserStore();
 
   const [keyword, setKeyword] = useState("");
   const [results, setResults] = useState<MediaItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
 
   const handleSearch = async (searchKeyword?: string) => {
     const searchTerm = searchKeyword ?? keyword;
@@ -142,6 +151,22 @@ export function Search() {
     }
   };
 
+  // Fetch user bookmarks
+  useEffect(() => {
+    const fetchBookmarks = async () => {
+      if (!user?.id) return;
+      try {
+        const response = await GetUserBookmarks(user.id);
+        if (response.success && response.data) {
+          setBookmarks(new Set(response.data));
+        }
+      } catch (error) {
+        console.error("Failed to fetch bookmarks:", error);
+      }
+    };
+    fetchBookmarks();
+  }, [user?.id]);
+
   // Sync keyword with URL param and trigger search
   // first render only!!!
   useEffect(() => {
@@ -163,6 +188,61 @@ export function Search() {
   const handleKeywordChange = (v: string) => {
     setKeyword(v);
     updateUrlParams(v);
+  };
+
+  const handleBookmarkToggle = async (mcId: string) => {
+    if (!user?.id) {
+      toast.error("请先登录");
+      return;
+    }
+
+    const isBookmarked = bookmarks.has(mcId);
+
+    try {
+      if (isBookmarked) {
+        const response = await RemoveBookmark(user.id, mcId);
+        if (response.success) {
+          setBookmarks((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(mcId);
+            return newSet;
+          });
+          toast.success("已取消收藏");
+        } else {
+          toast.error(response.error || "取消收藏失败");
+        }
+      } else {
+        // Find the media details before bookmarking
+        const media = results.find((m) => m.mc_id === mcId);
+        if (media) {
+          // Save media info to database first
+          const year = media.year ? parseInt(media.year) : 0;
+          const m3u8UrlsStr = JSON.stringify(media.m3u8_urls || {});
+
+          await SaveMediaInfo(
+            media.mc_id,
+            media.title,
+            "",
+            year,
+            media.category || "",
+            media.poster || "",
+            m3u8UrlsStr,
+            media.rating || 0
+          );
+        }
+
+        const response = await AddBookmark(user.id, mcId);
+        if (response.success) {
+          setBookmarks((prev) => new Set(prev).add(mcId));
+          toast.success("收藏成功");
+        } else {
+          toast.error(response.error || "收藏失败");
+        }
+      }
+    } catch (error) {
+      console.error("Bookmark toggle error:", error);
+      toast.error("操作失败");
+    }
   };
 
   if (isLoading) {
@@ -224,6 +304,8 @@ export function Search() {
                 console.log("Navigate to play:", result.mc_id);
                 toast.info(`Playing: ${result.title}`);
               }}
+              isBookmarked={bookmarks.has(result.mc_id)}
+              onBookmarkToggle={handleBookmarkToggle}
             />
           ))}
         </div>
