@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"log"
 	"os/exec"
 	"path/filepath"
@@ -18,12 +19,15 @@ type App struct {
 	ctx         context.Context
 	db          *services.DatabaseService
 	authHandler *handlers.AuthHandler
+	migrations  embed.FS
 }
 
 
 // NewApp creates a new App application struct
-func NewApp() *App {
-	return &App{}
+func NewApp(migrations embed.FS) *App {
+	return &App{
+		migrations: migrations,
+	}
 }
 
 // startup is called when the app starts. The context is saved
@@ -37,10 +41,7 @@ func (a *App) startup(ctx context.Context) {
 		log.Fatalf("Failed to get app data path: %v", err)
 	}
 
-	// Get the migrations path (relative to the executable)
-	migrationsPath := "migrations"
-
-	db, err := services.NewDatabaseService(dbPath, migrationsPath)
+	db, err := services.NewDatabaseService(dbPath, a.migrations)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}

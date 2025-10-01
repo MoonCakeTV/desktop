@@ -2,6 +2,7 @@ package services
 
 import (
 	"database/sql"
+	"embed"
 	"fmt"
 	"path/filepath"
 
@@ -12,7 +13,7 @@ type DatabaseService struct {
 	db *sql.DB
 }
 
-func NewDatabaseService(dbPath, migrationsPath string) (*DatabaseService, error) {
+func NewDatabaseService(dbPath string, migrationsFS embed.FS) (*DatabaseService, error) {
 	// Ensure the database file has .db extension
 	if filepath.Ext(dbPath) == "" {
 		dbPath += ".db"
@@ -32,7 +33,7 @@ func NewDatabaseService(dbPath, migrationsPath string) (*DatabaseService, error)
 
 	// Run migrations
 	migrationService := NewMigrationService(db)
-	if err := migrationService.RunMigrations(migrationsPath); err != nil {
+	if err := migrationService.RunMigrations(migrationsFS); err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 

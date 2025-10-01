@@ -13,9 +13,12 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+//go:embed migrations/*.sql
+var migrations embed.FS
+
 func main() {
 	// Create an instance of the app structure
-	app := NewApp()
+	app := NewApp(migrations)
 
 	// Create service instances
 	proxyService := services.NewProxyService()

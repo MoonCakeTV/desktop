@@ -2,9 +2,9 @@ package services
 
 import (
 	"database/sql"
+	"embed"
 	"fmt"
-	"os"
-	"path/filepath"
+	"io/fs"
 	"sort"
 	"strings"
 )
@@ -22,14 +22,14 @@ func NewMigrationService(db *sql.DB) *MigrationService {
 	return &MigrationService{db: db}
 }
 
-func (ms *MigrationService) RunMigrations(migrationsPath string) error {
+func (ms *MigrationService) RunMigrations(migrationsFS embed.FS) error {
 	// Create migrations table if it doesn't exist
 	if err := ms.createMigrationsTable(); err != nil {
 		return fmt.Errorf("failed to create migrations table: %w", err)
 	}
 
 	// Read all migration files
-	migrations, err := ms.readMigrationFiles(migrationsPath)
+	migrations, err := ms.readMigrationFiles(migrationsFS)
 	if err != nil {
 		return fmt.Errorf("failed to read migration files: %w", err)
 	}
@@ -57,8 +57,8 @@ func (ms *MigrationService) createMigrationsTable() error {
 	return err
 }
 
-func (ms *MigrationService) readMigrationFiles(migrationsPath string) ([]Migration, error) {
-	files, err := os.ReadDir(migrationsPath)
+func (ms *MigrationService) readMigrationFiles(migrationsFS embed.FS) ([]Migration, error) {
+	files, err := fs.ReadDir(migrationsFS, "migrations")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read migrations directory: %w", err)
 	}
@@ -69,7 +69,7 @@ func (ms *MigrationService) readMigrationFiles(migrationsPath string) ([]Migrati
 			continue
 		}
 
-		content, err := os.ReadFile(filepath.Join(migrationsPath, file.Name()))
+		content, err := migrationsFS.ReadFile("migrations/" + file.Name())
 		if err != nil {
 			return nil, fmt.Errorf("failed to read migration file %s: %w", file.Name(), err)
 		}
