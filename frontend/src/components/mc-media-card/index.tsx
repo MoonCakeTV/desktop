@@ -1,6 +1,7 @@
-import { Play, Star } from "lucide-react";
+import { Play, Star, Zap } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 
 export interface MediaItem {
   mc_id: string;
@@ -19,7 +20,159 @@ interface MediaCardProps {
   className?: string;
 }
 
+function getSpeedColor(speed: number): string {
+  if (speed >= 4) return "green-500";
+  if (speed >= 2) return "yellow-500";
+  return "red-500";
+}
+
+function resolveUrl(baseUrl: string, maybeRelative: string): string {
+  try {
+    return new URL(maybeRelative, baseUrl).toString();
+  } catch {
+    return maybeRelative;
+  }
+}
+
+function pickFirstSegmentUrlFromMediaPlaylist(
+  manifest: string,
+  manifestUrl: string
+): string | null {
+  const lines = manifest.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    if (!line || line.startsWith("#")) continue;
+    // First non-tag line in a media playlist should be a segment URI
+    return resolveUrl(manifestUrl, line);
+  }
+  return null;
+}
+
+function pickFirstVariantPlaylistUrl(
+  masterManifest: string,
+  masterUrl: string
+): string | null {
+  const lines = masterManifest.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    if (!line || line.startsWith("#")) continue;
+    return resolveUrl(masterUrl, line);
+  }
+  return null;
+}
+
+async function testMediaSpeed(
+  m3u8_urls: Record<string, string>
+): Promise<number> {
+  const urls = Object.values(m3u8_urls);
+  if (urls.length === 0) return Infinity;
+
+  const BYTES_TO_FETCH = 512 * 1024; // 512KB
+  const TIMEOUT_MS = 6000;
+
+  // Test the first available URL to determine media item speed
+  const url = urls[0];
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    // Fetch the m3u8 playlist
+    const manifestRes = await fetch(url, {
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!manifestRes.ok) throw new Error("Failed to fetch manifest");
+    const masterManifest = await manifestRes.text();
+
+    let mediaPlaylistUrl = url;
+    let segmentUrl: string | null = null;
+
+    // Check if it's a master playlist
+    if (/EXT-X-STREAM-INF/i.test(masterManifest)) {
+      // It's a master playlist, get first variant
+      const variantUrl = pickFirstVariantPlaylistUrl(masterManifest, url);
+      if (!variantUrl) throw new Error("Variant playlist not found");
+      mediaPlaylistUrl = variantUrl;
+
+      const variantRes = await fetch(mediaPlaylistUrl, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (!variantRes.ok) throw new Error("Failed to fetch variant");
+      const variantManifest = await variantRes.text();
+
+      segmentUrl = pickFirstSegmentUrlFromMediaPlaylist(
+        variantManifest,
+        mediaPlaylistUrl
+      );
+    } else {
+      // It's a media playlist
+      segmentUrl = pickFirstSegmentUrlFromMediaPlaylist(
+        masterManifest,
+        mediaPlaylistUrl
+      );
+    }
+
+    if (!segmentUrl) throw new Error("Segment not found");
+
+    // Now test speed by downloading part of the actual video segment
+    const start = Date.now();
+    const segmentRes = await fetch(segmentUrl, {
+      method: "GET",
+      headers: { Range: `bytes=0-${BYTES_TO_FETCH - 1}` },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    if (
+      !segmentRes.ok &&
+      segmentRes.status !== 206 &&
+      segmentRes.status !== 200
+    ) {
+      throw new Error(`Segment fetch failed: ${segmentRes.status}`);
+    }
+
+    const arrayBuf = await segmentRes.arrayBuffer();
+    const durationMs = Date.now() - start;
+    const bytesRead = arrayBuf.byteLength;
+
+    clearTimeout(timeoutId);
+
+    if (durationMs === 0 || bytesRead === 0) {
+      return Infinity;
+    }
+
+    const bytesPerSec = (bytesRead / durationMs) * 1000;
+    const mbPerSec = bytesPerSec / (1024 * 1024);
+
+    return mbPerSec;
+  } catch (error) {
+    console.error("Speed test error:", error);
+    return Infinity;
+  }
+}
+
 export function MediaCard({ mediaItem, onClick, className }: MediaCardProps) {
+  const [loadSpeed, setLoadSpeed] = useState<number | null>(null);
+  const [hasError, setHasError] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+
+  useEffect(() => {
+    if (mediaItem.m3u8_urls && Object.keys(mediaItem.m3u8_urls).length > 0) {
+      setIsTesting(true);
+      testMediaSpeed(mediaItem.m3u8_urls)
+        .then((speed) => {
+          if (speed === Infinity) {
+            setHasError(true);
+          } else {
+            setLoadSpeed(speed);
+          }
+        })
+        .finally(() => {
+          setIsTesting(false);
+        });
+    }
+  }, [mediaItem.m3u8_urls]);
   return (
     <Card
       onClick={onClick}
@@ -53,6 +206,42 @@ export function MediaCard({ mediaItem, onClick, className }: MediaCardProps) {
               <span className="text-xs text-yellow-500 font-medium">
                 {mediaItem.rating.toFixed(1)}
               </span>
+            </div>
+          )}
+
+          {/* Speed test badge on top left */}
+          {loadSpeed !== null && (
+            <div
+              className={cn(
+                "absolute top-2 left-2 bg-black/70 backdrop-blur-sm rounded px-2 py-1 flex items-center gap-1",
+                `text-${getSpeedColor(loadSpeed)}`
+              )}
+            >
+              <Zap
+                className={cn(
+                  "h-4 w-4",
+                  `fill-${getSpeedColor(loadSpeed)} text-${getSpeedColor(loadSpeed)}`
+                )}
+              />
+              <span className="text-sm font-semibold">
+                {loadSpeed.toFixed(1)} MB/s
+              </span>
+            </div>
+          )}
+
+          {/* Error badge */}
+          {hasError && (
+            <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm rounded px-2 py-1 flex items-center gap-1">
+              <Zap className="h-4 w-4 fill-red-500 text-red-500" />
+              <span className="text-sm font-semibold text-red-500">错误</span>
+            </div>
+          )}
+
+          {/* Testing indicator */}
+          {isTesting && (
+            <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5">
+              <Zap className="h-3 w-3 text-gray-400 animate-pulse" />
+              <span className="text-xs text-gray-400 font-medium">测速中</span>
             </div>
           )}
         </div>
