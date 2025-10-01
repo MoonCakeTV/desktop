@@ -72,7 +72,7 @@ export function RandomMedia() {
           {randomMedia.map((media) => (
             <MediaCard
               key={media.mc_id}
-              media={media}
+              mediaItem={media}
               onClick={() => {
                 console.log("Navigate to play:", media.mc_id);
                 toast.info(`Playing: ${media.title}`);

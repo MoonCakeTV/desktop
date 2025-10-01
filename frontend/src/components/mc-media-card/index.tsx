@@ -14,12 +14,12 @@ export interface MediaItem {
 }
 
 interface MediaCardProps {
-  media: MediaItem;
+  mediaItem: MediaItem;
   onClick: () => void;
   className?: string;
 }
 
-export function MediaCard({ media, onClick, className }: MediaCardProps) {
+export function MediaCard({ mediaItem, onClick, className }: MediaCardProps) {
   return (
     <Card
       onClick={onClick}
@@ -31,10 +31,10 @@ export function MediaCard({ media, onClick, className }: MediaCardProps) {
     >
       <CardContent className="p-0">
         <div className="relative aspect-[3/4] bg-slate-100">
-          {media.poster ? (
+          {mediaItem.poster ? (
             <img
-              src={media.poster}
-              alt={media.title}
+              src={mediaItem.poster}
+              alt={mediaItem.title}
               className="w-full h-full object-cover"
               loading="lazy"
             />
@@ -47,31 +47,34 @@ export function MediaCard({ media, onClick, className }: MediaCardProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
           {/* Rating badge on top right */}
-          {media.rating && (
+          {mediaItem.rating && (
             <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5">
               <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
               <span className="text-xs text-yellow-500 font-medium">
-                {media.rating.toFixed(1)}
+                {mediaItem.rating.toFixed(1)}
               </span>
             </div>
           )}
         </div>
         <div className="p-2 space-y-1">
-          <h3 className="font-medium text-sm line-clamp-2" title={media.title}>
-            {media.title}
+          <h3
+            className="font-medium text-sm line-clamp-2"
+            title={mediaItem.title}
+          >
+            {mediaItem.title}
           </h3>
 
           {/* Year and Region */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {media.year && <span>{media.year}</span>}
-            {media.year && media.region && <span>·</span>}
-            {media.region && <span>{media.region}</span>}
+            {mediaItem.year && <span>{mediaItem.year}</span>}
+            {mediaItem.year && mediaItem.region && <span>·</span>}
+            {mediaItem.region && <span>{mediaItem.region}</span>}
           </div>
 
           {/* Category */}
-          {media.category && (
+          {mediaItem.category && (
             <div className="flex flex-wrap gap-0.5">
-              {media.category.split(/[,，]/).map((cat, index) => (
+              {mediaItem.category.split(/[,，]/).map((cat, index) => (
                 <span
                   key={index}
                   className="inline-block px-1 py-0 text-xs bg-slate-100 text-slate-600 rounded"

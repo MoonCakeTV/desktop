@@ -69,7 +69,7 @@ export function Search() {
           // Parse m3u8_urls safely
           let m3u8_urls = {};
           try {
-            if (item.m3u8_urls && typeof item.m3u8_urls === 'string') {
+            if (item.m3u8_urls && typeof item.m3u8_urls === "string") {
               m3u8_urls = JSON.parse(item.m3u8_urls);
             }
           } catch (e) {
@@ -79,7 +79,7 @@ export function Search() {
           return {
             mc_id: item.mc_id,
             title: item.title || "未知",
-            poster: item.cover_image,  // Use cover_image as poster
+            poster: item.cover_image, // Use cover_image as poster
             year: item.year?.toString(),
             rating: item.rating,
             region: item.region,
@@ -115,7 +115,7 @@ export function Search() {
           // Parse m3u8_urls safely
           let m3u8_urls = {};
           try {
-            if (item.m3u8_urls && typeof item.m3u8_urls === 'string') {
+            if (item.m3u8_urls && typeof item.m3u8_urls === "string") {
               m3u8_urls = JSON.parse(item.m3u8_urls);
             }
           } catch (e) {
@@ -125,7 +125,7 @@ export function Search() {
           return {
             mc_id: item.mc_id,
             title: item.title || "未知",
-            poster: item.cover_image,  // Use cover_image as poster
+            poster: item.cover_image, // Use cover_image as poster
             year: item.year?.toString(),
             rating: item.rating,
             region: item.region,
@@ -218,7 +218,7 @@ export function Search() {
           {results.map((result) => (
             <MediaCard
               key={result.mc_id}
-              media={result}
+              mediaItem={result}
               onClick={() => {
                 // TODO: Navigate to play page when it's implemented
                 console.log("Navigate to play:", result.mc_id);
