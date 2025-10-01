@@ -320,3 +320,141 @@ func (ds *DatabaseService) DeleteSetting(settingID int, userID int, isAdmin bool
 
 	return err
 }
+
+// AddBookmark adds a bookmark for a user
+func (ds *DatabaseService) AddBookmark(userID int, mcID string) error {
+	_, err := ds.db.Exec(`
+		INSERT INTO bookmarks (user_id, mc_id)
+		VALUES (?, ?)
+		ON CONFLICT(user_id, mc_id) DO NOTHING
+	`, userID, mcID)
+	return err
+}
+
+// RemoveBookmark removes a bookmark for a user
+func (ds *DatabaseService) RemoveBookmark(userID int, mcID string) error {
+	_, err := ds.db.Exec(`
+		DELETE FROM bookmarks
+		WHERE user_id = ? AND mc_id = ?
+	`, userID, mcID)
+	return err
+}
+
+// IsBookmarked checks if a user has bookmarked a specific media
+func (ds *DatabaseService) IsBookmarked(userID int, mcID string) (bool, error) {
+	var count int
+	err := ds.db.QueryRow(`
+		SELECT COUNT(*) FROM bookmarks
+		WHERE user_id = ? AND mc_id = ?
+	`, userID, mcID).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// GetUserBookmarks returns all bookmarked mc_ids for a user
+func (ds *DatabaseService) GetUserBookmarks(userID int) ([]string, error) {
+	rows, err := ds.db.Query(`
+		SELECT mc_id FROM bookmarks
+		WHERE user_id = ?
+		ORDER BY created_at DESC
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var bookmarks []string
+	for rows.Next() {
+		var mcID string
+		if err := rows.Scan(&mcID); err != nil {
+			return nil, err
+		}
+		bookmarks = append(bookmarks, mcID)
+	}
+	return bookmarks, nil
+}
+
+// GetBookmarkedMediaDetails returns full media details for user's bookmarks
+func (ds *DatabaseService) GetBookmarkedMediaDetails(userID int) ([]map[string]interface{}, error) {
+	rows, err := ds.db.Query(`
+		SELECT
+			b.mc_id,
+			b.created_at as bookmarked_at,
+			m.title,
+			m.description,
+			m.year,
+			m.genre,
+			m.poster_url,
+			m.video_urls,
+			COALESCE(m.douban_rating, m.imdb_rating, m.tmdb_rating, 0) as rating
+		FROM bookmarks b
+		LEFT JOIN medias m ON b.mc_id = m.mc_id
+		WHERE b.user_id = ?
+		ORDER BY b.created_at DESC
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var bookmarks []map[string]interface{}
+	for rows.Next() {
+		bookmark := make(map[string]interface{})
+		var mcID, bookmarkedAt string
+		var title, description, posterURL, videoURLs sql.NullString
+		var year sql.NullInt64
+		var genre sql.NullString
+		var rating sql.NullFloat64
+
+		if err := rows.Scan(&mcID, &bookmarkedAt, &title, &description, &year, &genre, &posterURL, &videoURLs, &rating); err != nil {
+			return nil, err
+		}
+
+		bookmark["mc_id"] = mcID
+		bookmark["bookmarked_at"] = bookmarkedAt
+		if title.Valid {
+			bookmark["title"] = title.String
+		}
+		if description.Valid {
+			bookmark["description"] = description.String
+		}
+		if year.Valid {
+			bookmark["year"] = year.Int64
+		}
+		if genre.Valid {
+			bookmark["category"] = genre.String
+		}
+		if posterURL.Valid {
+			bookmark["poster"] = posterURL.String
+		}
+		if videoURLs.Valid {
+			bookmark["m3u8_urls"] = videoURLs.String
+		}
+		if rating.Valid {
+			bookmark["rating"] = rating.Float64
+		}
+
+		bookmarks = append(bookmarks, bookmark)
+	}
+	return bookmarks, nil
+}
+
+// SaveOrUpdateMedia saves or updates media information
+func (ds *DatabaseService) SaveOrUpdateMedia(mcID, title, description string, year int, genre, posterURL, videoURLs string, rating float64) error {
+	_, err := ds.db.Exec(`
+		INSERT INTO medias (mc_id, title, description, year, genre, poster_url, video_urls, douban_rating, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT(mc_id) DO UPDATE SET
+			title = excluded.title,
+			description = excluded.description,
+			year = excluded.year,
+			genre = excluded.genre,
+			poster_url = excluded.poster_url,
+			video_urls = excluded.video_urls,
+			douban_rating = excluded.douban_rating,
+			updated_at = CURRENT_TIMESTAMP
+	`, mcID, title, description, year, genre, posterURL, videoURLs, rating)
+	return err
+}

@@ -179,3 +179,59 @@ func (a *App) OpenDatabaseDirectory() models.APIResponse[string] {
 	return models.NewSuccessResponse(dir)
 }
 
+// Bookmark Management Functions
+
+// AddBookmark adds a bookmark for a user
+func (a *App) AddBookmark(userID int, mcID string) models.APIResponse[bool] {
+	err := a.db.AddBookmark(userID, mcID)
+	if err != nil {
+		return models.NewErrorResponse[bool](err.Error())
+	}
+	return models.NewSuccessResponse(true)
+}
+
+// RemoveBookmark removes a bookmark for a user
+func (a *App) RemoveBookmark(userID int, mcID string) models.APIResponse[bool] {
+	err := a.db.RemoveBookmark(userID, mcID)
+	if err != nil {
+		return models.NewErrorResponse[bool](err.Error())
+	}
+	return models.NewSuccessResponse(true)
+}
+
+// IsBookmarked checks if a user has bookmarked a specific media
+func (a *App) IsBookmarked(userID int, mcID string) models.APIResponse[bool] {
+	isBookmarked, err := a.db.IsBookmarked(userID, mcID)
+	if err != nil {
+		return models.NewErrorResponse[bool](err.Error())
+	}
+	return models.NewSuccessResponse(isBookmarked)
+}
+
+// GetUserBookmarks returns all bookmarked mc_ids for a user
+func (a *App) GetUserBookmarks(userID int) models.APIResponse[[]string] {
+	bookmarks, err := a.db.GetUserBookmarks(userID)
+	if err != nil {
+		return models.NewErrorResponse[[]string](err.Error())
+	}
+	return models.NewSuccessResponse(bookmarks)
+}
+
+// GetBookmarkedMediaDetails returns full media details for user's bookmarks
+func (a *App) GetBookmarkedMediaDetails(userID int) models.APIResponse[[]map[string]interface{}] {
+	bookmarks, err := a.db.GetBookmarkedMediaDetails(userID)
+	if err != nil {
+		return models.NewErrorResponse[[]map[string]interface{}](err.Error())
+	}
+	return models.NewSuccessResponse(bookmarks)
+}
+
+// SaveMediaInfo saves media information to the database
+func (a *App) SaveMediaInfo(mcID, title, description string, year int, genre, posterURL, videoURLs string, rating float64) models.APIResponse[bool] {
+	err := a.db.SaveOrUpdateMedia(mcID, title, description, year, genre, posterURL, videoURLs, rating)
+	if err != nil {
+		return models.NewErrorResponse[bool](err.Error())
+	}
+	return models.NewSuccessResponse(true)
+}
+

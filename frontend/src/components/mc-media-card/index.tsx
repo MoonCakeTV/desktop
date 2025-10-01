@@ -1,4 +1,4 @@
-import { Play, Star, Zap } from "lucide-react";
+import { Play, Star, Zap, Bookmark } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -18,6 +18,8 @@ interface MediaCardProps {
   mediaItem: MediaItem;
   onClick: () => void;
   className?: string;
+  isBookmarked?: boolean;
+  onBookmarkToggle?: (mcId: string) => void;
 }
 
 function getSpeedColor(speed: number): string {
@@ -152,7 +154,13 @@ async function testMediaSpeed(
   }
 }
 
-export function MediaCard({ mediaItem, onClick, className }: MediaCardProps) {
+export function MediaCard({
+  mediaItem,
+  onClick,
+  className,
+  isBookmarked = false,
+  onBookmarkToggle
+}: MediaCardProps) {
   const [loadSpeed, setLoadSpeed] = useState<number | null>(null);
   const [hasError, setHasError] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -199,9 +207,32 @@ export function MediaCard({ mediaItem, onClick, className }: MediaCardProps) {
           {/* Overlay gradient on hover */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-          {/* Rating badge on top right */}
+          {/* Bookmark icon on top right */}
+          {onBookmarkToggle && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onBookmarkToggle(mediaItem.mc_id);
+              }}
+              className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm rounded p-1.5 hover:bg-black/90 transition-colors z-10"
+            >
+              <Bookmark
+                className={cn(
+                  "h-4 w-4",
+                  isBookmarked
+                    ? "fill-yellow-500 text-yellow-500"
+                    : "text-white"
+                )}
+              />
+            </button>
+          )}
+
+          {/* Rating badge below bookmark */}
           {mediaItem.rating && (
-            <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5">
+            <div className={cn(
+              "absolute right-2 bg-black/70 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5",
+              onBookmarkToggle ? "top-12" : "top-2"
+            )}>
               <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
               <span className="text-xs text-yellow-500 font-medium">
                 {mediaItem.rating.toFixed(1)}

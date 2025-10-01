@@ -7,6 +7,7 @@ import {
   Home,
   LogOut,
   Database,
+  Bookmark,
 } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useUserStore } from "../../stores/user-store";
@@ -93,6 +94,16 @@ export const McSidebar = () => {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {isLoggedIn && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton tooltip="收藏夹" asChild>
+                    <Link to="/bookmarks">
+                      <Bookmark />
+                      <span>收藏夹</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   tooltip={isLoggedIn ? "18🈲" : "需要登录"}
