@@ -141,7 +141,6 @@ export namespace services {
 	    meta_data?: string;
 	    created_at: string;
 	    updated_at: string;
-	    token: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new User(source);
@@ -156,7 +155,6 @@ export namespace services {
 	        this.meta_data = source["meta_data"];
 	        this.created_at = source["created_at"];
 	        this.updated_at = source["updated_at"];
-	        this.token = source["token"];
 	    }
 	}
 

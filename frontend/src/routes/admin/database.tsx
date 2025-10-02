@@ -67,8 +67,9 @@ interface Setting {
 }
 
 function DatabaseManagement() {
-  const { user, isLoggedIn } = useUserStore();
+  const { user } = useUserStore();
   const navigate = useNavigate();
+  const isLoggedIn = user !== null;
 
   const [tables, setTables] = useState<string[]>([]);
   const [migrations, setMigrations] = useState<Migration[]>([]);

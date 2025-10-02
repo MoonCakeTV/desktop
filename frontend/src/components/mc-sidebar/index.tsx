@@ -35,9 +35,10 @@ import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 
 export const McSidebar = () => {
-  const { isLoggedIn, user, logout } = useUserStore();
+  const { user, logout } = useUserStore();
   const navigate = useNavigate();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const isLoggedIn = user !== null;
 
   const handleLogout = () => {
     logout();
