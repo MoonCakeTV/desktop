@@ -229,8 +229,13 @@ export function Bookmarks() {
               我的收藏
             </h1>
           </div>
-          <Button onClick={handleRefresh} variant="outline" size="sm">
-            <RefreshCw className="w-4 h-4 mr-2 text-black" />
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            size="sm"
+            className="text-black dark:text-white"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
             刷新
           </Button>
         </div>
