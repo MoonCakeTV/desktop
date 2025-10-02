@@ -18,7 +18,9 @@ interface MediaItemWithLoading extends MediaItem {
 
 export function Bookmarks() {
   const navigate = useNavigate();
-  const [bookmarkedMedia, setBookmarkedMedia] = useState<MediaItemWithLoading[]>([]);
+  const [bookmarkedMedia, setBookmarkedMedia] = useState<
+    MediaItemWithLoading[]
+  >([]);
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
   const { user } = useUserStore();
   const [refreshKey, setRefreshKey] = useState(0);
@@ -227,12 +229,8 @@ export function Bookmarks() {
               我的收藏
             </h1>
           </div>
-          <Button
-            onClick={handleRefresh}
-            variant="outline"
-            size="sm"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
+          <Button onClick={handleRefresh} variant="outline" size="sm">
+            <RefreshCw className="w-4 h-4 mr-2 text-black" />
             刷新
           </Button>
         </div>
