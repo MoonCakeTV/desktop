@@ -302,9 +302,7 @@ export function Search() {
               key={result.mc_id}
               mediaItem={result}
               onClick={() => {
-                // TODO: Navigate to play page when it's implemented
-                console.log("Navigate to play:", result.mc_id);
-                toast.info(`Playing: ${result.title}`);
+                navigate({ to: "/play", search: { mc_id: result.mc_id } });
               }}
               isBookmarked={bookmarks.has(result.mc_id)}
               onBookmarkToggle={handleBookmarkToggle}

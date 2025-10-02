@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { MediaCard, type MediaItem } from "../mc-media-card";
@@ -11,6 +12,7 @@ import {
 } from "../../../wailsjs/go/main/App";
 
 export function RandomMedia() {
+  const navigate = useNavigate();
   const [randomMedia, setRandomMedia] = useState<MediaItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
@@ -156,8 +158,7 @@ export function RandomMedia() {
               key={media.mc_id}
               mediaItem={media}
               onClick={() => {
-                console.log("Navigate to play:", media.mc_id);
-                toast.info(`Playing: ${media.title}`);
+                navigate({ to: "/play", search: { mc_id: media.mc_id } });
               }}
               isBookmarked={bookmarks.has(media.mc_id)}
               onBookmarkToggle={handleBookmarkToggle}

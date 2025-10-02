@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Loader2, Bookmark as BookmarkIcon, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { MediaCard, type MediaItem } from "../../components/mc-media-card";
@@ -16,6 +17,7 @@ interface MediaItemWithLoading extends MediaItem {
 }
 
 export function Bookmarks() {
+  const navigate = useNavigate();
   const [bookmarkedMedia, setBookmarkedMedia] = useState<MediaItemWithLoading[]>([]);
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
   const { user } = useUserStore();
@@ -251,8 +253,7 @@ export function Bookmarks() {
                 mediaItem={media}
                 onClick={() => {
                   if (!media.isLoading) {
-                    console.log("Navigate to play:", media.mc_id);
-                    toast.info(`Playing: ${media.title}`);
+                    navigate({ to: "/play", search: { mc_id: media.mc_id } });
                   }
                 }}
                 isBookmarked={bookmarks.has(media.mc_id)}
