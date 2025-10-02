@@ -227,8 +227,17 @@ func (a *App) GetBookmarkedMediaDetails(userID int) models.APIResponse[[]map[str
 }
 
 // SaveMediaInfo saves media information to the database
-func (a *App) SaveMediaInfo(mcID, title, description string, year int, genre, posterURL, videoURLs string, rating float64) models.APIResponse[bool] {
-	err := a.db.SaveOrUpdateMedia(mcID, title, description, year, genre, posterURL, videoURLs, rating)
+func (a *App) SaveMediaInfo(mcID, title, description string, year int, genre, region, category, posterURL, videoURLs string, rating float64) models.APIResponse[bool] {
+	err := a.db.SaveOrUpdateMedia(mcID, title, description, year, genre, region, category, posterURL, videoURLs, rating)
+	if err != nil {
+		return models.NewErrorResponse[bool](err.Error())
+	}
+	return models.NewSuccessResponse(true)
+}
+
+// DeleteMediaInfo deletes media information from the database
+func (a *App) DeleteMediaInfo(mcID string) models.APIResponse[bool] {
+	err := a.db.DeleteMedia(mcID)
 	if err != nil {
 		return models.NewErrorResponse[bool](err.Error())
 	}

@@ -6,6 +6,10 @@ export function AddBookmark(arg1, arg2) {
   return window['go']['main']['App']['AddBookmark'](arg1, arg2);
 }
 
+export function DeleteMediaInfo(arg1) {
+  return window['go']['main']['App']['DeleteMediaInfo'](arg1);
+}
+
 export function DeleteSetting(arg1, arg2, arg3) {
   return window['go']['main']['App']['DeleteSetting'](arg1, arg2, arg3);
 }
@@ -58,8 +62,8 @@ export function RemoveBookmark(arg1, arg2) {
   return window['go']['main']['App']['RemoveBookmark'](arg1, arg2);
 }
 
-export function SaveMediaInfo(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) {
-  return window['go']['main']['App']['SaveMediaInfo'](arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+export function SaveMediaInfo(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) {
+  return window['go']['main']['App']['SaveMediaInfo'](arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
 }
 
 export function Signup(arg1, arg2, arg3) {

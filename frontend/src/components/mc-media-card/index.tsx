@@ -1,4 +1,4 @@
-import { Play, Star, Zap, Bookmark } from "lucide-react";
+import { Play, Star, Zap, Bookmark, Loader2 } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -12,6 +12,7 @@ export interface MediaItem {
   region?: string;
   category?: string;
   m3u8_urls?: Record<string, string>; // Parsed m3u8 URLs, e.g., {"正片": "https://..."}
+  isLoading?: boolean; // Indicates if the media data is being loaded
 }
 
 interface MediaCardProps {
@@ -166,6 +167,9 @@ export function MediaCard({
   const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
+    // Skip speed test if item is still loading
+    if (mediaItem.isLoading) return;
+
     if (mediaItem.m3u8_urls && Object.keys(mediaItem.m3u8_urls).length > 0) {
       setIsTesting(true);
       testMediaSpeed(mediaItem.m3u8_urls)
@@ -180,7 +184,7 @@ export function MediaCard({
           setIsTesting(false);
         });
     }
-  }, [mediaItem.m3u8_urls]);
+  }, [mediaItem.m3u8_urls, mediaItem.isLoading]);
   return (
     <Card
       onClick={onClick}
@@ -192,7 +196,11 @@ export function MediaCard({
     >
       <CardContent className="p-0">
         <div className="relative aspect-[3/4] bg-slate-100">
-          {mediaItem.poster ? (
+          {mediaItem.isLoading ? (
+            <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-50">
+              <Loader2 className="w-12 h-12 animate-spin" />
+            </div>
+          ) : mediaItem.poster ? (
             <img
               src={mediaItem.poster}
               alt={mediaItem.title}
@@ -205,10 +213,12 @@ export function MediaCard({
             </div>
           )}
           {/* Overlay gradient on hover */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          {!mediaItem.isLoading && (
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          )}
 
           {/* Bookmark icon on top right */}
-          {onBookmarkToggle && (
+          {onBookmarkToggle && !mediaItem.isLoading && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -228,7 +238,7 @@ export function MediaCard({
           )}
 
           {/* Rating badge below bookmark */}
-          {mediaItem.rating && (
+          {mediaItem.rating && !mediaItem.isLoading && (
             <div className={cn(
               "absolute right-2 bg-black/70 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5",
               onBookmarkToggle ? "top-12" : "top-2"
@@ -241,7 +251,7 @@ export function MediaCard({
           )}
 
           {/* Speed test badge on top left */}
-          {loadSpeed !== null && (
+          {loadSpeed !== null && !mediaItem.isLoading && (
             <div
               className={cn(
                 "absolute top-2 left-2 bg-black/70 backdrop-blur-sm rounded px-2 py-1 flex items-center gap-1",
@@ -261,7 +271,7 @@ export function MediaCard({
           )}
 
           {/* Error badge */}
-          {hasError && (
+          {hasError && !mediaItem.isLoading && (
             <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm rounded px-2 py-1 flex items-center gap-1">
               <Zap className="h-4 w-4 fill-red-500 text-red-500" />
               <span className="text-sm font-semibold text-red-500">错误</span>
@@ -269,7 +279,7 @@ export function MediaCard({
           )}
 
           {/* Testing indicator */}
-          {isTesting && (
+          {isTesting && !mediaItem.isLoading && (
             <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5">
               <Zap className="h-3 w-3 text-gray-400 animate-pulse" />
               <span className="text-xs text-gray-400 font-medium">测速中</span>

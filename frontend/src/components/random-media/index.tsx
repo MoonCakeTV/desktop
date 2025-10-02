@@ -110,8 +110,10 @@ export function RandomMedia() {
           await SaveMediaInfo(
             media.mc_id,
             media.title,
-            "",
+            "", // description
             year,
+            "", // genre (not in random results)
+            media.region || "",
             media.category || "",
             media.poster || "",
             m3u8UrlsStr,

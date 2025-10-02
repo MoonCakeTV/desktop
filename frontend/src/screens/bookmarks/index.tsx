@@ -7,12 +7,16 @@ import {
   RemoveBookmark,
   GetBookmarkedMediaDetails,
   GetUserBookmarks,
+  SaveMediaInfo,
 } from "../../../wailsjs/go/main/App";
 import { Button } from "../../components/ui/button";
 
+interface MediaItemWithLoading extends MediaItem {
+  isLoading?: boolean;
+}
+
 export function Bookmarks() {
-  const [bookmarkedMedia, setBookmarkedMedia] = useState<MediaItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [bookmarkedMedia, setBookmarkedMedia] = useState<MediaItemWithLoading[]>([]);
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
   const { user } = useUserStore();
   const [refreshKey, setRefreshKey] = useState(0);
@@ -21,19 +25,17 @@ export function Bookmarks() {
     const fetchBookmarks = async () => {
       if (!user?.id) return;
 
-      setIsLoading(true);
       try {
         // Fetch bookmarked mc_ids
         const bookmarkIdsResponse = await GetUserBookmarks(user.id);
         if (!bookmarkIdsResponse.success || !bookmarkIdsResponse.data) {
-          setIsLoading(false);
           return;
         }
 
         const mcIds = bookmarkIdsResponse.data;
         setBookmarks(new Set(mcIds));
 
-        // Try to fetch from database first
+        // Fetch from database
         const dbResponse = await GetBookmarkedMediaDetails(user.id);
         const dbMediaMap = new Map<string, any>();
 
@@ -43,11 +45,14 @@ export function Bookmarks() {
           });
         }
 
-        // Fetch media details from API for each bookmark
-        const mediaPromises = mcIds.map(async (mcId) => {
-          // Check if we have it in database
+        // Separate items into those with data and those needing fetch
+        const mediaWithData: MediaItemWithLoading[] = [];
+        const missingMcIds: string[] = [];
+
+        mcIds.forEach((mcId) => {
           const dbItem = dbMediaMap.get(mcId);
           if (dbItem && dbItem.title) {
+            // Item exists in database
             let m3u8_urls = {};
             try {
               if (dbItem.m3u8_urls && typeof dbItem.m3u8_urls === "string") {
@@ -57,59 +62,124 @@ export function Bookmarks() {
               console.warn(`Failed to parse m3u8_urls for ${mcId}:`, e);
             }
 
-            return {
+            mediaWithData.push({
               mc_id: dbItem.mc_id,
               title: dbItem.title,
               poster: dbItem.poster,
               year: dbItem.year?.toString(),
               rating: dbItem.rating,
+              region: dbItem.region,
               category: dbItem.category,
               m3u8_urls,
-            };
+            });
+          } else {
+            // Item needs to be fetched
+            missingMcIds.push(mcId);
+            // Add placeholder with loading indicator
+            mediaWithData.push({
+              mc_id: mcId,
+              title: "加载中...",
+              isLoading: true,
+            });
           }
-
-          // Fallback: fetch from API
-          try {
-            const res = await fetch(`https://s1.m3u8.io/v1/mc_item/${mcId}`);
-            const json = await res.json();
-
-            if (json.code === 200 && json.data?.mc_item) {
-              const item = json.data.mc_item;
-              let m3u8_urls = {};
-              try {
-                if (item.m3u8_urls && typeof item.m3u8_urls === "string") {
-                  m3u8_urls = JSON.parse(item.m3u8_urls);
-                }
-              } catch (e) {
-                console.warn(`Failed to parse m3u8_urls for ${mcId}:`, e);
-              }
-
-              return {
-                mc_id: item.mc_id,
-                title: item.title || "未知",
-                poster: item.cover_image,
-                year: item.year?.toString(),
-                rating: undefined, // API doesn't return rating
-                region: item.region,
-                category: item.category,
-                m3u8_urls,
-              };
-            }
-          } catch (error) {
-            console.error(`Failed to fetch media ${mcId}:`, error);
-          }
-          return null;
         });
 
-        const mediaResults = await Promise.all(mediaPromises);
-        setBookmarkedMedia(
-          mediaResults.filter((media) => media !== null) as MediaItem[]
-        );
+        setBookmarkedMedia(mediaWithData);
+
+        // Fetch missing items from API using Promise.allSettled
+        if (missingMcIds.length > 0) {
+          const fetchPromises = missingMcIds.map((mcId) =>
+            fetch(`https://s1.m3u8.io/v1/mc_item/${mcId}`)
+              .then((res) => res.json())
+              .then((json) => ({ mcId, json, error: null }))
+              .catch((error) => ({ mcId, json: null, error }))
+          );
+
+          const results = await Promise.allSettled(fetchPromises);
+
+          // Process each result
+          for (const result of results) {
+            if (result.status === "fulfilled") {
+              const { mcId, json, error } = result.value;
+
+              if (error) {
+                console.error(`Failed to fetch media ${mcId}:`, error);
+                // Update placeholder to show error
+                setBookmarkedMedia((prev) =>
+                  prev.map((item) =>
+                    item.mc_id === mcId
+                      ? { ...item, title: "加载失败", isLoading: false }
+                      : item
+                  )
+                );
+                continue;
+              }
+
+              if (json.code === 200 && json.data?.mc_item) {
+                const item = json.data.mc_item;
+                let m3u8_urls = {};
+                try {
+                  if (item.m3u8_urls && typeof item.m3u8_urls === "string") {
+                    m3u8_urls = JSON.parse(item.m3u8_urls);
+                  }
+                } catch (e) {
+                  console.warn(`Failed to parse m3u8_urls for ${mcId}:`, e);
+                }
+
+                const mediaItem: MediaItem = {
+                  mc_id: item.mc_id,
+                  title: item.title || "未知",
+                  poster: item.cover_image,
+                  year: item.year?.toString(),
+                  rating: undefined,
+                  region: item.region,
+                  category: item.category,
+                  m3u8_urls,
+                };
+
+                // Save to database
+                try {
+                  const year = item.year || 0;
+                  const m3u8UrlsStr = JSON.stringify(m3u8_urls);
+
+                  await SaveMediaInfo(
+                    item.mc_id,
+                    item.title || "未知",
+                    item.summary || "",
+                    year,
+                    "", // genre
+                    item.region || "",
+                    item.category || "",
+                    item.cover_image || "",
+                    m3u8UrlsStr,
+                    0 // rating
+                  );
+                } catch (saveError) {
+                  console.error(`Failed to save media ${mcId}:`, saveError);
+                }
+
+                // Update the UI
+                setBookmarkedMedia((prev) =>
+                  prev.map((prevItem) =>
+                    prevItem.mc_id === mcId ? mediaItem : prevItem
+                  )
+                );
+              } else {
+                console.error(`Invalid response for media ${mcId}:`, json);
+                setBookmarkedMedia((prev) =>
+                  prev.map((item) =>
+                    item.mc_id === mcId
+                      ? { ...item, title: "加载失败", isLoading: false }
+                      : item
+                  )
+                );
+              }
+            }
+          }
+        }
       } catch (error) {
         console.error("Failed to fetch bookmarks:", error);
         toast.error("获取收藏失败");
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -159,18 +229,13 @@ export function Bookmarks() {
             onClick={handleRefresh}
             variant="outline"
             size="sm"
-            disabled={isLoading}
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className="w-4 h-4 mr-2" />
             刷新
           </Button>
         </div>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-10 h-10 animate-spin" />
-          </div>
-        ) : bookmarkedMedia.length === 0 ? (
+        {bookmarkedMedia.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <BookmarkIcon className="w-16 h-16 text-slate-300 mb-4" />
             <p className="text-slate-500 text-lg">暂无收藏内容</p>
@@ -185,8 +250,10 @@ export function Bookmarks() {
                 key={media.mc_id}
                 mediaItem={media}
                 onClick={() => {
-                  console.log("Navigate to play:", media.mc_id);
-                  toast.info(`Playing: ${media.title}`);
+                  if (!media.isLoading) {
+                    console.log("Navigate to play:", media.mc_id);
+                    toast.info(`Playing: ${media.title}`);
+                  }
                 }}
                 isBookmarked={bookmarks.has(media.mc_id)}
                 onBookmarkToggle={handleBookmarkToggle}

@@ -386,6 +386,8 @@ func (ds *DatabaseService) GetBookmarkedMediaDetails(userID int) ([]map[string]i
 			m.description,
 			m.year,
 			m.genre,
+			m.region,
+			m.category,
 			m.poster_url,
 			m.video_urls,
 			COALESCE(m.douban_rating, m.imdb_rating, m.tmdb_rating, 0) as rating
@@ -405,10 +407,10 @@ func (ds *DatabaseService) GetBookmarkedMediaDetails(userID int) ([]map[string]i
 		var mcID, bookmarkedAt string
 		var title, description, posterURL, videoURLs sql.NullString
 		var year sql.NullInt64
-		var genre sql.NullString
+		var genre, region, category sql.NullString
 		var rating sql.NullFloat64
 
-		if err := rows.Scan(&mcID, &bookmarkedAt, &title, &description, &year, &genre, &posterURL, &videoURLs, &rating); err != nil {
+		if err := rows.Scan(&mcID, &bookmarkedAt, &title, &description, &year, &genre, &region, &category, &posterURL, &videoURLs, &rating); err != nil {
 			return nil, err
 		}
 
@@ -424,7 +426,13 @@ func (ds *DatabaseService) GetBookmarkedMediaDetails(userID int) ([]map[string]i
 			bookmark["year"] = year.Int64
 		}
 		if genre.Valid {
-			bookmark["category"] = genre.String
+			bookmark["genre"] = genre.String
+		}
+		if region.Valid {
+			bookmark["region"] = region.String
+		}
+		if category.Valid {
+			bookmark["category"] = category.String
 		}
 		if posterURL.Valid {
 			bookmark["poster"] = posterURL.String
@@ -442,19 +450,30 @@ func (ds *DatabaseService) GetBookmarkedMediaDetails(userID int) ([]map[string]i
 }
 
 // SaveOrUpdateMedia saves or updates media information
-func (ds *DatabaseService) SaveOrUpdateMedia(mcID, title, description string, year int, genre, posterURL, videoURLs string, rating float64) error {
+func (ds *DatabaseService) SaveOrUpdateMedia(mcID, title, description string, year int, genre, region, category, posterURL, videoURLs string, rating float64) error {
 	_, err := ds.db.Exec(`
-		INSERT INTO medias (mc_id, title, description, year, genre, poster_url, video_urls, douban_rating, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		INSERT INTO medias (mc_id, title, description, year, genre, region, category, poster_url, video_urls, douban_rating, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		ON CONFLICT(mc_id) DO UPDATE SET
 			title = excluded.title,
 			description = excluded.description,
 			year = excluded.year,
 			genre = excluded.genre,
+			region = excluded.region,
+			category = excluded.category,
 			poster_url = excluded.poster_url,
 			video_urls = excluded.video_urls,
 			douban_rating = excluded.douban_rating,
 			updated_at = CURRENT_TIMESTAMP
-	`, mcID, title, description, year, genre, posterURL, videoURLs, rating)
+	`, mcID, title, description, year, genre, region, category, posterURL, videoURLs, rating)
+	return err
+}
+
+// DeleteMedia deletes a media item from the database
+func (ds *DatabaseService) DeleteMedia(mcID string) error {
+	_, err := ds.db.Exec(`
+		DELETE FROM medias
+		WHERE mc_id = ?
+	`, mcID)
 	return err
 }

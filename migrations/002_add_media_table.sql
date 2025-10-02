@@ -3,11 +3,13 @@
 
 CREATE TABLE IF NOT EXISTS medias (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    mc_id TEXT NOT NULL,
+    mc_id TEXT NOT NULL UNIQUE,
     title TEXT NOT NULL,
     description TEXT,
     year INTEGER,
     genre TEXT,
+    region TEXT,
+    category TEXT,
     douban_rating REAL DEFAULT 0.0,
     douban_id TEXT,
     imdb_rating REAL DEFAULT 0.0,

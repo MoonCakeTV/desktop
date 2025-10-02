@@ -222,8 +222,10 @@ export function Search() {
           await SaveMediaInfo(
             media.mc_id,
             media.title,
-            "",
+            "", // description
             year,
+            "", // genre (not in search results)
+            media.region || "",
             media.category || "",
             media.poster || "",
             m3u8UrlsStr,

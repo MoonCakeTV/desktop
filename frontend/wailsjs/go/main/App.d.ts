@@ -4,6 +4,8 @@ import {models} from '../models';
 
 export function AddBookmark(arg1:number,arg2:string):Promise<models.APIResponse_bool_>;
 
+export function DeleteMediaInfo(arg1:string):Promise<models.APIResponse_bool_>;
+
 export function DeleteSetting(arg1:number,arg2:number,arg3:boolean):Promise<models.APIResponse_bool_>;
 
 export function GetAllSettings():Promise<models.APIResponse___map_string_interface____>;
@@ -30,7 +32,7 @@ export function OpenDatabaseDirectory():Promise<models.APIResponse_string_>;
 
 export function RemoveBookmark(arg1:number,arg2:string):Promise<models.APIResponse_bool_>;
 
-export function SaveMediaInfo(arg1:string,arg2:string,arg3:string,arg4:number,arg5:string,arg6:string,arg7:string,arg8:number):Promise<models.APIResponse_bool_>;
+export function SaveMediaInfo(arg1:string,arg2:string,arg3:string,arg4:number,arg5:string,arg6:string,arg7:string,arg8:string,arg9:string,arg10:number):Promise<models.APIResponse_bool_>;
 
 export function Signup(arg1:string,arg2:string,arg3:string):Promise<models.APIResponse_mooncaketv_services_User_>;
 
