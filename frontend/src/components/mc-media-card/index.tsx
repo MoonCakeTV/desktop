@@ -23,10 +23,10 @@ interface MediaCardProps {
   onBookmarkToggle?: (mcId: string) => void;
 }
 
-function getSpeedColor(speed: number): string {
-  if (speed >= 4) return "green-500";
-  if (speed >= 2) return "yellow-500";
-  return "red-500";
+function getSpeedColor(speed: number): { text: string; icon: string } {
+  if (speed >= 4) return { text: "text-green-500", icon: "fill-green-500 text-green-500" };
+  if (speed >= 2) return { text: "text-yellow-500", icon: "fill-yellow-500 text-yellow-500" };
+  return { text: "text-red-500", icon: "fill-red-500 text-red-500" };
 }
 
 function resolveUrl(baseUrl: string, maybeRelative: string): string {
@@ -255,13 +255,13 @@ export function MediaCard({
             <div
               className={cn(
                 "absolute top-2 left-2 bg-black/70 backdrop-blur-sm rounded px-2 py-1 flex items-center gap-1",
-                `text-${getSpeedColor(loadSpeed)}`
+                getSpeedColor(loadSpeed).text
               )}
             >
               <Zap
                 className={cn(
                   "h-4 w-4",
-                  `fill-${getSpeedColor(loadSpeed)} text-${getSpeedColor(loadSpeed)}`
+                  getSpeedColor(loadSpeed).icon
                 )}
               />
               <span className="text-sm font-semibold">
