@@ -2,6 +2,7 @@ import { Play, Star, Zap, Bookmark, Loader2 } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
+import { TestMediaSpeed } from "../../../wailsjs/go/services/ProxyService";
 
 export interface MediaItem {
   mc_id: string;
@@ -29,126 +30,24 @@ function getSpeedColor(speed: number): { text: string; icon: string } {
   return { text: "text-red-500", icon: "fill-red-500 text-red-500" };
 }
 
-function resolveUrl(baseUrl: string, maybeRelative: string): string {
-  try {
-    return new URL(maybeRelative, baseUrl).toString();
-  } catch {
-    return maybeRelative;
-  }
-}
-
-function pickFirstSegmentUrlFromMediaPlaylist(
-  manifest: string,
-  manifestUrl: string
-): string | null {
-  const lines = manifest.split(/\r?\n/);
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i].trim();
-    if (!line || line.startsWith("#")) continue;
-    // First non-tag line in a media playlist should be a segment URI
-    return resolveUrl(manifestUrl, line);
-  }
-  return null;
-}
-
-function pickFirstVariantPlaylistUrl(
-  masterManifest: string,
-  masterUrl: string
-): string | null {
-  const lines = masterManifest.split(/\r?\n/);
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i].trim();
-    if (!line || line.startsWith("#")) continue;
-    return resolveUrl(masterUrl, line);
-  }
-  return null;
-}
-
 async function testMediaSpeed(
   m3u8_urls: Record<string, string>
 ): Promise<number> {
   const urls = Object.values(m3u8_urls);
   if (urls.length === 0) return Infinity;
 
-  const BYTES_TO_FETCH = 512 * 1024; // 512KB
-  const TIMEOUT_MS = 6000;
-
-  // Test the first available URL to determine media item speed
+  // Test the first available URL using Go backend (bypasses CORS)
   const url = urls[0];
+
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const result = await TestMediaSpeed(url);
 
-    // Fetch the m3u8 playlist
-    const manifestRes = await fetch(url, {
-      cache: "no-store",
-      signal: controller.signal,
-    });
-    if (!manifestRes.ok) throw new Error("Failed to fetch manifest");
-    const masterManifest = await manifestRes.text();
-
-    let mediaPlaylistUrl = url;
-    let segmentUrl: string | null = null;
-
-    // Check if it's a master playlist
-    if (/EXT-X-STREAM-INF/i.test(masterManifest)) {
-      // It's a master playlist, get first variant
-      const variantUrl = pickFirstVariantPlaylistUrl(masterManifest, url);
-      if (!variantUrl) throw new Error("Variant playlist not found");
-      mediaPlaylistUrl = variantUrl;
-
-      const variantRes = await fetch(mediaPlaylistUrl, {
-        cache: "no-store",
-        signal: controller.signal,
-      });
-      if (!variantRes.ok) throw new Error("Failed to fetch variant");
-      const variantManifest = await variantRes.text();
-
-      segmentUrl = pickFirstSegmentUrlFromMediaPlaylist(
-        variantManifest,
-        mediaPlaylistUrl
-      );
-    } else {
-      // It's a media playlist
-      segmentUrl = pickFirstSegmentUrlFromMediaPlaylist(
-        masterManifest,
-        mediaPlaylistUrl
-      );
-    }
-
-    if (!segmentUrl) throw new Error("Segment not found");
-
-    // Now test speed by downloading part of the actual video segment
-    const start = Date.now();
-    const segmentRes = await fetch(segmentUrl, {
-      method: "GET",
-      headers: { Range: `bytes=0-${BYTES_TO_FETCH - 1}` },
-      cache: "no-store",
-      signal: controller.signal,
-    });
-
-    if (
-      !segmentRes.ok &&
-      segmentRes.status !== 206 &&
-      segmentRes.status !== 200
-    ) {
-      throw new Error(`Segment fetch failed: ${segmentRes.status}`);
-    }
-
-    const arrayBuf = await segmentRes.arrayBuffer();
-    const durationMs = Date.now() - start;
-    const bytesRead = arrayBuf.byteLength;
-
-    clearTimeout(timeoutId);
-
-    if (durationMs === 0 || bytesRead === 0) {
+    if (result.error) {
+      console.error("Speed test error:", result.error);
       return Infinity;
     }
 
-    const bytesPerSec = (bytesRead / durationMs) * 1000;
-    const mbPerSec = bytesPerSec / (1024 * 1024);
-
-    return mbPerSec;
+    return result.speedMBps;
   } catch (error) {
     console.error("Speed test error:", error);
     return Infinity;

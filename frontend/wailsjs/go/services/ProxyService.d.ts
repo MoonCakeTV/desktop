@@ -3,3 +3,5 @@
 import {services} from '../models';
 
 export function ProxyImage(arg1:string):Promise<services.ProxyImageResponse>;
+
+export function TestMediaSpeed(arg1:string):Promise<services.SpeedTestResult>;

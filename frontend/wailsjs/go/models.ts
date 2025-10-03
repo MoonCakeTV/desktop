@@ -133,6 +133,20 @@ export namespace services {
 	        this.contentType = source["contentType"];
 	    }
 	}
+	export class SpeedTestResult {
+	    speedMBps: number;
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SpeedTestResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.speedMBps = source["speedMBps"];
+	        this.error = source["error"];
+	    }
+	}
 	export class User {
 	    id: number;
 	    username: string;
