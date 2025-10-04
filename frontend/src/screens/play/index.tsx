@@ -79,12 +79,12 @@ export function Play() {
   }
 
   return (
-    <div className="px-4 sm:px-10 py-4 sm:py-8 w-full min-h-full">
+    <div className="px-4 sm:px-10 py-4 sm:py-8 w-full min-h-full text-black">
       <div className="flex items-center gap-4 mb-6">
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate({ to: "/search" })}
+          onClick={() => navigate({ to: "/search", search: { keyword: mediaItem?.title || "" } })}
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -134,23 +134,18 @@ export function Play() {
           </div>
 
           {episodes.length > 1 && (
-            <div>
-              <h2 className="text-lg font-semibold mb-3">Episodes</h2>
-              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
-                {episodes.map(([episode]) => (
-                  <Button
-                    key={episode}
-                    variant={
-                      episode === selectedEpisode ? "default" : "outline"
-                    }
-                    size="sm"
-                    onClick={() => setSelectedEpisode(episode)}
-                    className="h-9"
-                  >
-                    {episode}
-                  </Button>
-                ))}
-              </div>
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+              {episodes.map(([episode]) => (
+                <Button
+                  key={episode}
+                  variant={episode === selectedEpisode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedEpisode(episode)}
+                  className="h-9"
+                >
+                  {episode}
+                </Button>
+              ))}
             </div>
           )}
         </div>

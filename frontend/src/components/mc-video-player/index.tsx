@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
-import { Maximize, ExternalLink } from "lucide-react";
+import { Maximize } from "lucide-react";
 import { Button } from "../ui/button";
-import { WindowFullscreen, BrowserOpenURL } from "../../../wailsjs/runtime/runtime";
+import { WindowFullscreen } from "../../../wailsjs/runtime/runtime";
 
 interface VideoPlayerProps {
   src: string;
@@ -100,24 +100,11 @@ export function VideoPlayer({ src, poster, className = "" }: VideoPlayerProps) {
     WindowFullscreen();
   };
 
-  const openInBrowser = () => {
-    BrowserOpenURL(src);
-  };
-
   return (
     <div className={`relative w-full ${className}`}>
       {error ? (
         <div className="w-full h-full rounded-lg bg-black flex flex-col items-center justify-center text-red-500 gap-4">
           <p>{error}</p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={openInBrowser}
-            className="gap-2"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Open in Browser
-          </Button>
         </div>
       ) : (
         <>
@@ -125,33 +112,21 @@ export function VideoPlayer({ src, poster, className = "" }: VideoPlayerProps) {
             ref={videoRef}
             controls
             poster={poster}
-            className="w-full aspect-video rounded-lg bg-black"
+            className="w-full h-full rounded-lg bg-black"
             playsInline
-            style={{ minHeight: "400px" }}
           >
             Your browser does not support the video tag.
           </video>
 
-          <div className="absolute top-4 right-4 z-50 flex gap-2">
-            <Button
-              variant="secondary"
-              size="icon"
-              className="opacity-70 hover:opacity-100 transition-opacity pointer-events-auto"
-              onClick={openInBrowser}
-              title="Open in browser"
-            >
-              <ExternalLink className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              className="opacity-70 hover:opacity-100 transition-opacity pointer-events-auto"
-              onClick={toggleFullscreen}
-              title="Fullscreen"
-            >
-              <Maximize className="h-5 w-5" />
-            </Button>
-          </div>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="absolute top-4 right-4 z-50 opacity-70 hover:opacity-100 transition-opacity"
+            onClick={toggleFullscreen}
+            title="Fullscreen"
+          >
+            <Maximize className="h-5 w-5" />
+          </Button>
         </>
       )}
     </div>
