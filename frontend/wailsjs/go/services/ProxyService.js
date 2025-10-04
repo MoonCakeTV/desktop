@@ -6,6 +6,10 @@ export function ProxyImage(arg1) {
   return window['go']['services']['ProxyService']['ProxyImage'](arg1);
 }
 
+export function ProxyURL(arg1) {
+  return window['go']['services']['ProxyService']['ProxyURL'](arg1);
+}
+
 export function TestMediaSpeed(arg1) {
   return window['go']['services']['ProxyService']['TestMediaSpeed'](arg1);
 }

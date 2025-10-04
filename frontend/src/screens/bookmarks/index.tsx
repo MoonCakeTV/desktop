@@ -256,7 +256,11 @@ export function Bookmarks() {
                 mediaItem={media}
                 onClick={() => {
                   if (!media.isLoading) {
-                    navigate({ to: "/play", search: { mc_id: media.mc_id } });
+                    navigate({
+                      to: "/play",
+                      search: { mc_id: media.mc_id },
+                      state: { mediaItem: media },
+                    });
                   }
                 }}
                 isBookmarked={bookmarks.has(media.mc_id)}

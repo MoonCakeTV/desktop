@@ -196,6 +196,61 @@ func (p *ProxyService) TestMediaSpeed(m3u8URL string) *SpeedTestResult {
 	return &SpeedTestResult{SpeedMBps: mbPerSec}
 }
 
+// ProxyURLResponse represents the response from ProxyURL
+type ProxyURLResponse struct {
+	Data        []byte `json:"data"`
+	ContentType string `json:"contentType"`
+}
+
+// ProxyURL fetches any URL and returns the data with content type
+func (p *ProxyService) ProxyURL(url string) (*ProxyURLResponse, error) {
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set headers to mimic a browser
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch URL: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch URL: status %d", resp.StatusCode)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read data: %w", err)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		// Guess content type based on URL
+		if strings.Contains(url, ".m3u8") {
+			contentType = "application/vnd.apple.mpegurl"
+		} else if strings.Contains(url, ".ts") {
+			contentType = "video/MP2T"
+		} else {
+			contentType = "application/octet-stream"
+		}
+	}
+
+	return &ProxyURLResponse{
+		Data:        data,
+		ContentType: contentType,
+	}, nil
+}
+
 // ProxyImage fetches an image from a URL and returns the image data with content type
 func (p *ProxyService) ProxyImage(imageURL string) (*ProxyImageResponse, error) {
 	client := &http.Client{}

@@ -13,7 +13,7 @@ import {
 
 export function RandomMedia() {
   const navigate = useNavigate();
-  const [randomMedia, setRandomMedia] = useState<MediaItem[]>([]);
+  const [randomMediaItems, setRandomMediaItems] = useState<MediaItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
   const { user } = useUserStore();
@@ -27,11 +27,11 @@ export function RandomMedia() {
 
         if (json.code !== 200) {
           toast.error(json.message || "获取随机内容失败");
-          setRandomMedia([]);
+          setRandomMediaItems([]);
           return;
         }
 
-        setRandomMedia(
+        setRandomMediaItems(
           (json.data?.items || []).map((item: any) => {
             let m3u8_urls = {};
             try {
@@ -103,7 +103,7 @@ export function RandomMedia() {
         }
       } else {
         // Find the media details before bookmarking
-        const media = randomMedia.find((m) => m.mc_id === mcId);
+        const media = randomMediaItems.find((m) => m.mc_id === mcId);
         if (media) {
           // Save media info to database first
           const year = media.year ? parseInt(media.year) : 0;
@@ -147,20 +147,24 @@ export function RandomMedia() {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-10 h-10 animate-spin" />
         </div>
-      ) : randomMedia.length === 0 ? (
+      ) : randomMediaItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-slate-500">暂无推荐内容</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {randomMedia.map((media) => (
+          {randomMediaItems.map((mediaItem) => (
             <MediaCard
-              key={media.mc_id}
-              mediaItem={media}
+              key={mediaItem.mc_id}
+              mediaItem={mediaItem}
               onClick={() => {
-                navigate({ to: "/play", search: { mc_id: media.mc_id } });
+                navigate({
+                  to: "/play",
+                  search: { mc_id: mediaItem.mc_id },
+                  state: { mediaItem },
+                });
               }}
-              isBookmarked={bookmarks.has(media.mc_id)}
+              isBookmarked={bookmarks.has(mediaItem.mc_id)}
               onBookmarkToggle={handleBookmarkToggle}
             />
           ))}

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Play } from "../screens/play";
+import type { MediaItem } from "../components/mc-media-card";
 
 export const Route = createFileRoute("/play")({
   component: Play,
@@ -11,3 +12,9 @@ export const Route = createFileRoute("/play")({
     return { mc_id };
   },
 });
+
+declare module "@tanstack/react-router" {
+  interface HistoryState {
+    mediaItem?: MediaItem;
+  }
+}

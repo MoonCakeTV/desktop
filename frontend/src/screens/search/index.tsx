@@ -302,7 +302,11 @@ export function Search() {
               key={result.mc_id}
               mediaItem={result}
               onClick={() => {
-                navigate({ to: "/play", search: { mc_id: result.mc_id } });
+                navigate({
+                  to: "/play",
+                  search: { mc_id: result.mc_id },
+                  state: { mediaItem: result },
+                });
               }}
               isBookmarked={bookmarks.has(result.mc_id)}
               onBookmarkToggle={handleBookmarkToggle}
