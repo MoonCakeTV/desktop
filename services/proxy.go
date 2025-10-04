@@ -206,6 +206,13 @@ type ProxyURLResponse struct {
 func (p *ProxyService) ProxyURL(url string) (*ProxyURLResponse, error) {
 	client := &http.Client{
 		Timeout: 30 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			// Follow up to 10 redirects
+			if len(via) >= 10 {
+				return fmt.Errorf("too many redirects")
+			}
+			return nil
+		},
 	}
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -213,10 +220,21 @@ func (p *ProxyService) ProxyURL(url string) (*ProxyURLResponse, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set headers to mimic a browser
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	// Extract host from URL for Referer
+	parsedURL := req.URL
+	origin := fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
+
+	// Set comprehensive headers to mimic a real browser request
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 	req.Header.Set("Accept", "*/*")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7")
+	req.Header.Set("Accept-Encoding", "gzip, deflate, br")
+	req.Header.Set("Origin", origin)
+	req.Header.Set("Referer", origin+"/")
+	req.Header.Set("Sec-Fetch-Dest", "empty")
+	req.Header.Set("Sec-Fetch-Mode", "cors")
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
+	req.Header.Set("Connection", "keep-alive")
 
 	resp, err := client.Do(req)
 	if err != nil {
