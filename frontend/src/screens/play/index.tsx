@@ -1,15 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { Route } from "../../routes/play";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Bookmark } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { VideoPlayer } from "../../components/mc-video-player";
 import { useMediaDetails } from "../../hooks/use-media-details";
+import { useUserStore } from "../../stores/user-store";
+import {
+  AddBookmark,
+  RemoveBookmark,
+  IsBookmarked,
+} from "../../../wailsjs/go/main/App";
 
 export function Play() {
   const navigate = useNavigate();
   const { mc_id } = Route.useSearch();
   const location = useLocation();
+  const user = useUserStore((state) => state.user);
 
   // Get media from navigation state if available
   const mediaFromState = location.state?.mediaItem;
@@ -30,6 +37,51 @@ export function Play() {
   const [selectedEpisode, setSelectedEpisode] = useState<string>(
     episodes.length > 0 ? episodes[0][0] : ""
   );
+
+  // Bookmark state
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
+
+  // Check bookmark status when media loads
+  useEffect(() => {
+    const checkBookmarkStatus = async () => {
+      if (user && mc_id) {
+        try {
+          const response = await IsBookmarked(user.id, mc_id);
+          if (response.success && response.data !== undefined) {
+            setIsBookmarked(response.data);
+          }
+        } catch (error) {
+          console.error("Error checking bookmark status:", error);
+        }
+      }
+    };
+
+    checkBookmarkStatus();
+  }, [user, mc_id]);
+
+  const handleBookmarkToggle = async () => {
+    if (!user || !mc_id || isBookmarking) return;
+
+    setIsBookmarking(true);
+    try {
+      if (isBookmarked) {
+        const response = await RemoveBookmark(user.id, mc_id);
+        if (response.success) {
+          setIsBookmarked(false);
+        }
+      } else {
+        const response = await AddBookmark(user.id, mc_id);
+        if (response.success) {
+          setIsBookmarked(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -88,7 +140,20 @@ export function Play() {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold">{mediaItem?.title || "Play"}</h1>
+        <h1 className="text-2xl font-bold flex-1">{mediaItem?.title || "Play"}</h1>
+        {user && mc_id && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleBookmarkToggle}
+            disabled={isBookmarking}
+            title={isBookmarked ? "Remove bookmark" : "Add bookmark"}
+          >
+            <Bookmark
+              className={`h-5 w-5 ${isBookmarked ? "fill-current" : ""}`}
+            />
+          </Button>
+        )}
       </div>
 
       <div className="space-y-6">

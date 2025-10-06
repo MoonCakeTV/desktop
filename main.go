@@ -40,6 +40,9 @@ func main() {
 			Appearance:           mac.NSAppearanceNameDarkAqua,
 			WebviewIsTransparent: false,
 			WindowIsTranslucent:  false,
+			Preferences: &mac.Preferences{
+				FullscreenEnabled: mac.Enabled,
+			},
 		},
 		EnableDefaultContextMenu: true,
 		EnableFraudulentWebsiteDetection: false,

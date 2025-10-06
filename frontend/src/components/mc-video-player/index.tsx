@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
-import { Maximize } from "lucide-react";
+import { Maximize, Minimize } from "lucide-react";
 import { Button } from "../ui/button";
-import { WindowFullscreen } from "../../../wailsjs/runtime/runtime";
+import { cn } from "../../lib/utils";
+import { WindowFullscreen, WindowUnfullscreen } from "../../../wailsjs/runtime/runtime";
 
 interface VideoPlayerProps {
   src: string;
@@ -12,8 +13,10 @@ interface VideoPlayerProps {
 
 export function VideoPlayer({ src, poster, className = "" }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [error, setError] = useState<string>("");
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -96,12 +99,77 @@ export function VideoPlayer({ src, poster, className = "" }: VideoPlayerProps) {
     };
   }, [src]);
 
-  const toggleFullscreen = () => {
-    WindowFullscreen();
+  // Listen for fullscreen changes (both standard and webkit)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      // Check both standard and webkit fullscreen
+      const isInFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement
+      );
+      setIsFullscreen(isInFullscreen);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    try {
+      // Check if already in fullscreen
+      const isInFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement
+      );
+
+      if (!isInFullscreen) {
+        // Try standard API first
+        if (video.requestFullscreen) {
+          await video.requestFullscreen();
+        }
+        // Try webkit API
+        else if ((video as any).webkitRequestFullscreen) {
+          await (video as any).webkitRequestFullscreen();
+        }
+        // Fallback to Wails window fullscreen
+        else {
+          WindowFullscreen();
+          setIsFullscreen(true);
+        }
+      } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          await (document as any).webkitExitFullscreen();
+        } else {
+          WindowUnfullscreen();
+          setIsFullscreen(false);
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling fullscreen:", error);
+      // Fallback to window fullscreen on error
+      if (!isFullscreen) {
+        WindowFullscreen();
+        setIsFullscreen(true);
+      } else {
+        WindowUnfullscreen();
+        setIsFullscreen(false);
+      }
+    }
   };
 
   return (
-    <div className={`relative w-full ${className}`}>
+    <div ref={containerRef} className={cn("relative w-full", className)}>
       {error ? (
         <div className="w-full h-full rounded-lg bg-black flex flex-col items-center justify-center text-red-500 gap-4">
           <p>{error}</p>
@@ -123,9 +191,13 @@ export function VideoPlayer({ src, poster, className = "" }: VideoPlayerProps) {
             size="icon"
             className="absolute top-4 right-4 z-50 opacity-70 hover:opacity-100 transition-opacity"
             onClick={toggleFullscreen}
-            title="Fullscreen"
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
           >
-            <Maximize className="h-5 w-5" />
+            {isFullscreen ? (
+              <Minimize className="h-5 w-5" />
+            ) : (
+              <Maximize className="h-5 w-5" />
+            )}
           </Button>
         </>
       )}
