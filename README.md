@@ -15,15 +15,17 @@
 ## 技术栈
 
 ### 后端
+
 - **框架**: Wails v2
 - **语言**: Go
 - **数据库**: SQLite (带迁移支持)
 - **架构**: 平台无关的应用数据路径处理 (Windows/macOS/Linux)
 
 ### 前端
+
 - **框架**: React 19 + TypeScript
 - **路由**: TanStack Router (文件路由)
-- **UI组件**: Radix UI + Shadcn UI
+- **UI 组件**: Radix UI + Shadcn UI
 - **样式**: Tailwind CSS v4
 - **视频播放**: HLS.js + Video.js
 - **构建工具**: Vite
@@ -147,13 +149,14 @@ make tea         # 推送到 tea 远程仓库 (带标签)
 - ✅ Linux
 
 应用会自动识别平台并使用相应的数据目录：
+
 - **Windows**: `%APPDATA%\MooncakeTV`
 - **macOS**: `~/Library/Application Support/MooncakeTV`
 - **Linux**: `~/.local/share/MooncakeTV`
 
 ## 许可证
 
-请查看 LICENSE 文件了解详情。
+[Apache 2.0](LICENSE)
 
 ## 贡献
 
