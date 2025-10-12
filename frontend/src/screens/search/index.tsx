@@ -241,8 +241,8 @@ export function Search() {
           handleKeywordChange={handleKeywordChange}
           handleRandom={handleRandom}
         />
-        <div className="grow flex items-center justify-center w-full h-full">
-          <Loader2 className="w-10 h-10 animate-spin" />
+        <div className="flex-1 flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-10 h-10 animate-spin text-gray-600" />
         </div>
       </div>
     );
