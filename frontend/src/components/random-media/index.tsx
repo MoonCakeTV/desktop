@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { MediaCard, type MediaItem } from "../mc-media-card";
 import { useUserStore } from "../../stores/user-store";
+import { parse_m3u8_urls } from "../../lib/media-utils";
 import {
   AddBookmark,
   RemoveBookmark,
@@ -33,14 +34,7 @@ export function RandomMedia() {
 
         setRandomMediaItems(
           (json.data?.items || []).map((item: any) => {
-            let m3u8_urls = {};
-            try {
-              if (item.m3u8_urls && typeof item.m3u8_urls === "string") {
-                m3u8_urls = JSON.parse(item.m3u8_urls);
-              }
-            } catch (e) {
-              console.warn(`Failed to parse m3u8_urls for ${item.mc_id}:`, e);
-            }
+            const m3u8_urls = parse_m3u8_urls(item.m3u8_urls);
 
             return {
               mc_id: item.mc_id,

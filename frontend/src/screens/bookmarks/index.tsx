@@ -4,6 +4,7 @@ import { Loader2, Bookmark as BookmarkIcon, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { MediaCard, type MediaItem } from "../../components/mc-media-card";
 import { useUserStore } from "../../stores/user-store";
+import { parse_m3u8_urls } from "../../lib/media-utils";
 import {
   RemoveBookmark,
   GetBookmarkedMediaDetails,
@@ -57,14 +58,7 @@ export function Bookmarks() {
           const dbItem = dbMediaMap.get(mcId);
           if (dbItem && dbItem.title) {
             // Item exists in database
-            let m3u8_urls = {};
-            try {
-              if (dbItem.m3u8_urls && typeof dbItem.m3u8_urls === "string") {
-                m3u8_urls = JSON.parse(dbItem.m3u8_urls);
-              }
-            } catch (e) {
-              console.warn(`Failed to parse m3u8_urls for ${mcId}:`, e);
-            }
+            const m3u8_urls = parse_m3u8_urls(dbItem.m3u8_urls);
 
             mediaWithData.push({
               mc_id: dbItem.mc_id,
@@ -121,14 +115,7 @@ export function Bookmarks() {
 
               if (json.code === 200 && json.data?.mc_item) {
                 const item = json.data.mc_item;
-                let m3u8_urls = {};
-                try {
-                  if (item.m3u8_urls && typeof item.m3u8_urls === "string") {
-                    m3u8_urls = JSON.parse(item.m3u8_urls);
-                  }
-                } catch (e) {
-                  console.warn(`Failed to parse m3u8_urls for ${mcId}:`, e);
-                }
+                const m3u8_urls = parse_m3u8_urls(item.m3u8_urls);
 
                 const mediaItem: MediaItem = {
                   mc_id: item.mc_id,

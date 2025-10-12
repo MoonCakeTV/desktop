@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { MediaItem } from "../components/mc-media-card";
+import { parse_m3u8_urls } from "../lib/media-utils";
 
 interface UseMediaDetailsResult {
   media: MediaItem | null;
@@ -34,14 +35,7 @@ export function useMediaDetails(mcId: string): UseMediaDetailsResult {
         }
 
         const item = json.data;
-        let m3u8_urls = {};
-        try {
-          if (item.m3u8_urls && typeof item.m3u8_urls === "string") {
-            m3u8_urls = JSON.parse(item.m3u8_urls);
-          }
-        } catch (e) {
-          console.warn(`Failed to parse m3u8_urls for ${item.mc_id}:`, e);
-        }
+        const m3u8_urls = parse_m3u8_urls(item.m3u8_urls);
 
         setMedia({
           mc_id: item.mc_id,
