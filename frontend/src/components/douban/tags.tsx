@@ -2,14 +2,26 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 
 import { DoubanMovieItem, DoubanTVItem } from "./types";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { ProxyImage } from "../../../wailsjs/go/services/ProxyService";
 
 // Global store for preloaded images
 const preloadedImages = new Map<string, string>();
 
-const ImageTooltip = ({ imageUrl, alt, imagesLoaded }: { imageUrl: string; alt: string; imagesLoaded: boolean }) => {
+const ImageTooltip = ({
+  imageUrl,
+  alt,
+  imagesLoaded,
+}: {
+  imageUrl: string;
+  alt: string;
+  imagesLoaded: boolean;
+}) => {
   const imageSrc = preloadedImages.get(imageUrl) || "";
 
   return (
@@ -46,7 +58,7 @@ const preloadImage = async (imageUrl: string): Promise<void> => {
     for (let i = 0; i < binaryString.length; i++) {
       uint8Array[i] = binaryString.charCodeAt(i);
     }
-    const mimeType = response.contentType || 'image/jpeg';
+    const mimeType = response.contentType || "image/jpeg";
 
     const blob = new Blob([uint8Array], { type: mimeType });
     const url = URL.createObjectURL(blob);
@@ -88,7 +100,7 @@ export const DoubanTags = () => {
         // Preload all images
         const imageUrls = [
           ...movies.map((movie: DoubanMovieItem) => movie.cover),
-          ...tvs.map((tv: DoubanTVItem) => tv.pic.normal)
+          ...tvs.map((tv: DoubanTVItem) => tv.pic.normal),
         ];
 
         // Load images in parallel
@@ -106,56 +118,110 @@ export const DoubanTags = () => {
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
           豆瓣热门电影
         </h2>
-        <div className="flex flex-wrap gap-2">
-          {movies.map((movie) => (
-            <Tooltip key={movie.id}>
-              <TooltipTrigger asChild>
-                <Badge
-                  variant="outline"
-                  className="cursor-pointer hover:bg-purple-900 hover:text-white px-2 py-1 border-2 border-blue-300 dark:border-gray-700"
-                  onClick={() => {
-                    navigate({
-                      to: "/search",
-                      search: { keyword: movie.title }
-                    });
-                  }}
-                >
-                  {`${movie.title} (${movie.rate})`}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="p-2">
-                <ImageTooltip imageUrl={movie.cover} alt={movie.title} imagesLoaded={imagesLoaded} />
-              </TooltipContent>
-            </Tooltip>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {movies.map((movie) => {
+            const imageSrc = preloadedImages.get(movie.cover) || "";
+            return (
+              <Tooltip key={movie.id}>
+                <TooltipTrigger asChild>
+                  <Card
+                    className="cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 overflow-hidden py-0 gap-0"
+                    onClick={() => {
+                      navigate({
+                        to: "/search",
+                        search: { keyword: movie.title },
+                      });
+                    }}
+                  >
+                    <div className="aspect-[2/3] bg-gray-200 dark:bg-gray-700">
+                      {imageSrc ? (
+                        <img
+                          src={imageSrc}
+                          alt={movie.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <div className="text-xs text-gray-500">
+                            {imagesLoaded ? "No Image" : "Loading..."}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <CardContent className="p-2">
+                      <p className="text-xs font-medium truncate">
+                        {movie.title}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {movie.rate}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="p-2">
+                  <ImageTooltip
+                    imageUrl={movie.cover}
+                    alt={movie.title}
+                    imagesLoaded={imagesLoaded}
+                  />
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
         </div>
       </div>
       <div className="flex flex-col gap-6">
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
           豆瓣热门电视剧
         </h2>
-        <div className="flex flex-wrap gap-2">
-          {tvs.map((tv) => (
-            <Tooltip key={tv.id}>
-              <TooltipTrigger asChild>
-                <Badge
-                  variant="outline"
-                  className="cursor-pointer hover:bg-purple-900 hover:text-white px-2 py-1 border-2 border-blue-300 dark:border-gray-700"
-                  onClick={() => {
-                    navigate({
-                      to: "/search",
-                      search: { keyword: tv.title }
-                    });
-                  }}
-                >
-                  {`${tv.title} (${tv.rating.value})`}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="p-2">
-                <ImageTooltip imageUrl={tv.pic.normal} alt={tv.title} imagesLoaded={imagesLoaded} />
-              </TooltipContent>
-            </Tooltip>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {tvs.map((tv) => {
+            const imageSrc = preloadedImages.get(tv.pic.normal) || "";
+            return (
+              <Tooltip key={tv.id}>
+                <TooltipTrigger asChild>
+                  <Card
+                    className="cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 overflow-hidden py-0 gap-0"
+                    onClick={() => {
+                      navigate({
+                        to: "/search",
+                        search: { keyword: tv.title },
+                      });
+                    }}
+                  >
+                    <div className="aspect-[2/3] bg-gray-200 dark:bg-gray-700">
+                      {imageSrc ? (
+                        <img
+                          src={imageSrc}
+                          alt={tv.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <div className="text-xs text-gray-500">
+                            {imagesLoaded ? "No Image" : "Loading..."}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <CardContent className="p-2">
+                      <p className="text-xs font-medium truncate">{tv.title}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {tv.rating.value}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="p-2">
+                  <ImageTooltip
+                    imageUrl={tv.pic.normal}
+                    alt={tv.title}
+                    imagesLoaded={imagesLoaded}
+                  />
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
         </div>
       </div>
     </div>
